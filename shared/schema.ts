@@ -1,18 +1,26 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// File upload response schema
+export const fileDataSchema = z.object({
+  fileName: z.string(),
+  fileSize: z.number(),
+  fileType: z.string(),
+  rowCount: z.number(),
+  columnCount: z.number(),
+  headers: z.array(z.string()),
+  rows: z.array(z.array(z.any())),
+  totalRows: z.number(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+export type FileData = z.infer<typeof fileDataSchema>;
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// File upload validation
+export const MAX_FILE_SIZE_CSV = 1024 * 1024 * 1024; // 1GB for CSV (streamed)
+export const MAX_FILE_SIZE_EXCEL = 100 * 1024 * 1024; // 100MB for Excel (memory-loaded)
+export const MAX_FILE_SIZE = MAX_FILE_SIZE_CSV; // For frontend general validation
+
+export const SUPPORTED_FILE_TYPES = [
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // .xls
+  'text/csv', // .csv
+];

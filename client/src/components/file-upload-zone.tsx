@@ -1,0 +1,209 @@
+import { useCallback, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { FileData, MAX_FILE_SIZE_CSV, MAX_FILE_SIZE_EXCEL } from "@shared/schema";
+import { CloudUpload, FileSpreadsheet } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+
+interface FileUploadZoneProps {
+  onUpload: (data: FileData) => void;
+  isUploading: boolean;
+  setIsUploading: (uploading: boolean) => void;
+}
+
+export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUploadZoneProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const { toast } = useToast();
+
+  const validateFile = (file: File): string | null => {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const validExtensions = ['xlsx', 'xls', 'csv'];
+    
+    if (!fileExtension || !validExtensions.includes(fileExtension)) {
+      return "Invalid file type. Please upload Excel (.xlsx, .xls) or CSV files";
+    }
+
+    // Different size limits for Excel vs CSV
+    const isExcel = fileExtension === 'xlsx' || fileExtension === 'xls';
+    const maxSize = isExcel ? MAX_FILE_SIZE_EXCEL : MAX_FILE_SIZE_CSV;
+    const maxSizeLabel = isExcel ? "100MB" : "1GB";
+    
+    if (file.size > maxSize) {
+      return `${isExcel ? 'Excel' : 'CSV'} file size exceeds ${maxSizeLabel} limit${isExcel ? '. For larger datasets, please convert to CSV format.' : ''}`;
+    }
+
+    return null;
+  };
+
+  const handleFileUpload = async (file: File) => {
+    const validationError = validateFile(file);
+    if (validationError) {
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: validationError,
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      const response = await apiRequest("POST", "/api/upload", formData);
+      const data = await response.json() as FileData;
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      setTimeout(() => {
+        onUpload(data);
+        toast({
+          title: "Upload Successful",
+          description: `${file.name} has been processed successfully`,
+        });
+      }, 300);
+    } catch (error) {
+      setIsUploading(false);
+      setUploadProgress(0);
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to process file",
+      });
+    }
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center space-y-2">
+        <h2 className="text-4xl font-semibold text-foreground">
+          Drop your file here
+        </h2>
+        <p className="text-base text-muted-foreground">
+          Upload Excel or CSV files to preview your data
+        </p>
+      </div>
+
+      <Card
+        className={`
+          min-h-64 lg:min-h-80 p-8 
+          border-2 border-dashed transition-all duration-200
+          ${isDragging 
+            ? "border-primary bg-primary/5 scale-[1.02]" 
+            : "border-border bg-card/80 backdrop-blur-sm"
+          }
+        `}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        data-testid="dropzone-upload"
+      >
+        <div className="h-full flex flex-col items-center justify-center gap-6">
+          {isUploading ? (
+            <div className="w-full max-w-md space-y-4">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                  <FileSpreadsheet className="h-8 w-8 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-medium text-foreground">
+                    Processing file...
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {uploadProgress}%
+                  </p>
+                </div>
+              </div>
+              <Progress value={uploadProgress} className="h-2" data-testid="progress-upload" />
+            </div>
+          ) : (
+            <>
+              <div className="h-12 w-12 lg:h-16 lg:w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <CloudUpload className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
+              </div>
+              
+              <div className="text-center space-y-2">
+                <p className="text-lg font-medium text-foreground">
+                  Drag and drop your file here
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  CSV up to 1GB • Excel up to 100MB
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 w-full max-w-xs">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-sm text-muted-foreground">or</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              <label htmlFor="file-input">
+                <Button
+                  type="button"
+                  size="lg"
+                  className="cursor-pointer"
+                  onClick={() => document.getElementById('file-input')?.click()}
+                  data-testid="button-browse"
+                >
+                  Browse Files
+                </Button>
+              </label>
+              <input
+                id="file-input"
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                onChange={handleFileSelect}
+                data-testid="input-file"
+              />
+            </>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}

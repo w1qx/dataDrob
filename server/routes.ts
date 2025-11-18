@@ -1,13 +1,19 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx";
 import Papa from "papaparse";
-import { MAX_FILE_SIZE_CSV, MAX_FILE_SIZE_EXCEL, fileDataSchema } from "@shared/schema";
-import { unlink } from "fs/promises";
+import {
+  MAX_FILE_SIZE_CSV,
+  MAX_FILE_SIZE_EXCEL,
+  fileDataSchema,
+} from "@shared/schema";
+import { unlink, copyFile, mkdir } from "fs/promises";
 import { createReadStream } from "fs";
 import path from "path";
 import { tmpdir } from "os";
+
+const OUTPUT_FILE_PATH = "/var/www/html/whatsapp-web/customers.xls";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for disk-based file uploads
@@ -15,24 +21,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     storage: multer.diskStorage({
       destination: tmpdir(),
       filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-      }
+        const uniqueSuffix =
+          Date.now() + "-" + Math.round(Math.random() * 1e9);
+        cb(
+          null,
+          file.fieldname +
+            "-" +
+            uniqueSuffix +
+            path.extname(file.originalname),
+        );
+      },
     }),
     limits: {
       fileSize: MAX_FILE_SIZE_CSV, // Set max to CSV limit initially
     },
     fileFilter: (req, file, cb) => {
       const allowedMimes = [
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-excel',
-        'text/csv',
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "text/csv",
       ];
-      
+
       if (allowedMimes.includes(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('Invalid file type. Only Excel and CSV files are allowed.'));
+        cb(
+          new Error(
+            "Invalid file type. Only Excel and CSV files are allowed.",
+          ),
+        );
       }
     },
   });
@@ -40,49 +57,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // File upload endpoint
   app.post("/api/upload", upload.single("file"), async (req, res) => {
     let filePath: string | undefined;
-    
+
     try {
       if (!req.file) {
-        return res.status(400).json({ 
-          error: "No file uploaded" 
+        return res.status(400).json({
+          error: "No file uploaded",
         });
       }
 
       const file = req.file;
       filePath = file.path;
-      
+
       // Check Excel file size limit (100MB)
-      const isExcel = file.mimetype.includes('spreadsheet') || file.mimetype.includes('ms-excel');
+      const isExcel =
+        file.mimetype.includes("spreadsheet") ||
+        file.mimetype.includes("ms-excel");
       if (isExcel && file.size > MAX_FILE_SIZE_EXCEL) {
-        return res.status(413).json({ 
-          error: `Excel files are limited to 100MB due to memory constraints. For larger datasets, please convert to CSV format (up to 1GB supported).` 
+        return res.status(413).json({
+          error:
+            "Excel files are limited to 100MB due to memory constraints. For larger datasets, please convert to CSV format (up to 1GB supported).",
         });
       }
-      
+
       let headers: string[] = [];
       let rows: any[][] = [];
       let totalRows = 0;
 
       // Parse based on file type
-      if (file.mimetype.includes('csv') || file.originalname.endsWith('.csv')) {
+      if (file.mimetype.includes("csv") || file.originalname.endsWith(".csv")) {
         // Parse CSV from disk - only keep first 20 rows, count the rest
         await new Promise<void>((resolve, reject) => {
           let headersParsed = false;
           let rowCount = 0;
           const previewRows: any[][] = [];
           const PREVIEW_LIMIT = 20;
-          
+
           Papa.parse(createReadStream(filePath!), {
             header: false,
             skipEmptyLines: true,
             chunk: (results) => {
               const data = results.data as any[][];
-              
+
               for (const row of data) {
                 if (!headersParsed) {
                   // First row is headers
-                  headers = row.map((h: any, i: number) => 
-                    h ? String(h) : `Column ${i + 1}`
+                  headers = row.map((h: any, i: number) =>
+                    h ? String(h) : `Column ${i + 1}`,
                   );
                   headersParsed = true;
                 } else {
@@ -101,35 +121,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
             error: (error) => {
               reject(error);
-            }
+            },
           });
         });
       } else {
         // Parse Excel from disk - only read first 21 rows (header + 20 data rows)
         const PREVIEW_LIMIT = 21; // 1 header + 20 data rows
-        
+
         // Read only preview rows - use !fullref to get total count
-        const workbook = XLSX.readFile(filePath, { 
+        const workbook = XLSX.readFile(filePath, {
           sheetRows: PREVIEW_LIMIT,
         });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        
+
         // Get total row count from !fullref (contains full range even with sheetRows limit)
-        const fullRef = worksheet['!fullref'] || worksheet['!ref'] || 'A1';
+        const fullRef = worksheet["!fullref"] || worksheet["!ref"] || "A1";
         const range = XLSX.utils.decode_range(fullRef);
         totalRows = Math.max(0, range.e.r); // Total rows (0-indexed, includes header)
-        
+
         // Parse the preview data
-        const previewData = XLSX.utils.sheet_to_json(worksheet, { 
+        const previewData = XLSX.utils.sheet_to_json(worksheet, {
           header: 1,
           defval: null,
           raw: false,
         }) as any[][];
-        
+
         if (previewData.length > 0) {
-          headers = previewData[0].map((h: any, i: number) => 
-            h ? String(h) : `Column ${i + 1}`
+          headers = previewData[0].map((h: any, i: number) =>
+            h ? String(h) : `Column ${i + 1}`,
           );
           rows = previewData.slice(1);
           // totalRows is 0-indexed, so actual row count is totalRows
@@ -153,23 +173,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate response
       const validatedData = fileDataSchema.parse(fileData);
 
+      // 👉 Save / overwrite the uploaded file to your desired path
+      try {
+        // Make sure the directory exists
+        await mkdir(path.dirname(OUTPUT_FILE_PATH), { recursive: true });
+
+        // Copy the temp file to /var/www/html/whatsapp-web/customers.xls
+        await copyFile(filePath!, OUTPUT_FILE_PATH);
+      } catch (copyError) {
+        console.error("Failed to save uploaded file:", copyError);
+        return res.status(500).json({
+          error: "Failed to save uploaded file",
+        });
+      }
+
+      // Send the same preview data back to the frontend
       res.json(validatedData);
     } catch (error) {
       console.error("File upload error:", error);
-      
+
       if (error instanceof Error) {
-        if (error.message.includes('File too large')) {
-          return res.status(413).json({ 
-            error: "File size exceeds 1GB limit" 
+        if (error.message.includes("File too large")) {
+          return res.status(413).json({
+            error: "File size exceeds 1GB limit",
           });
         }
-        return res.status(400).json({ 
-          error: error.message 
+        return res.status(400).json({
+          error: error.message,
         });
       }
-      
-      res.status(500).json({ 
-        error: "Failed to process file" 
+
+      res.status(500).json({
+        error: "Failed to process file",
       });
     } finally {
       // Clean up temp file

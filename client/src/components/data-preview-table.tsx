@@ -12,13 +12,13 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
   const hasMoreRows = fileData.totalRows > displayRows.length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-['Cairo']">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-foreground">
-          Data Preview
+          معاينة البيانات
         </h2>
         <p className="text-sm text-muted-foreground" data-testid="text-preview-info">
-          Showing {displayRows.length} of {fileData.totalRows.toLocaleString()} rows
+          عرض {displayRows.length} من {fileData.totalRows.toLocaleString()} صفوف
         </p>
       </div>
 
@@ -29,27 +29,27 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   {fileData.headers.map((header, index) => (
-                    <TableHead 
+                    <TableHead
                       key={index}
-                      className="font-semibold text-foreground px-4 py-3 whitespace-nowrap sticky top-0 bg-muted/50"
+                      className="font-semibold text-foreground px-4 py-3 whitespace-nowrap sticky top-0 bg-muted/50 text-right"
                       data-testid={`header-${index}`}
                     >
-                      {header || `Column ${index + 1}`}
+                      {header || `عمود ${index + 1}`}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayRows.map((row, rowIndex) => (
-                  <TableRow 
+                  <TableRow
                     key={rowIndex}
                     className="hover-elevate"
                     data-testid={`row-${rowIndex}`}
                   >
                     {row.map((cell, cellIndex) => (
-                      <TableCell 
+                      <TableCell
                         key={cellIndex}
-                        className="px-4 py-2 text-sm"
+                        className="px-4 py-2 text-sm text-right"
                         data-testid={`cell-${rowIndex}-${cellIndex}`}
                       >
                         {cell !== null && cell !== undefined ? String(cell) : ""}
@@ -61,11 +61,11 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
             </Table>
           </div>
         </ScrollArea>
-        
+
         {hasMoreRows && (
           <div className="border-t bg-muted/30 px-4 py-3 text-center">
             <p className="text-sm text-muted-foreground">
-              {fileData.totalRows - displayRows.length} more rows not shown
+              {fileData.totalRows - displayRows.length} صفوف إضافية غير معروضة
             </p>
           </div>
         )}

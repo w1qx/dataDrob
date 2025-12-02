@@ -21,7 +21,7 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
   const validateFile = (file: File): string | null => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const validExtensions = ['xlsx', 'xls', 'csv'];
-    
+
     if (!fileExtension || !validExtensions.includes(fileExtension)) {
       return "Invalid file type. Please upload Excel (.xlsx, .xls) or CSV files";
     }
@@ -30,7 +30,7 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
     const isExcel = fileExtension === 'xlsx' || fileExtension === 'xls';
     const maxSize = isExcel ? MAX_FILE_SIZE_EXCEL : MAX_FILE_SIZE_CSV;
     const maxSizeLabel = isExcel ? "100MB" : "1GB";
-    
+
     if (file.size > maxSize) {
       return `${isExcel ? 'Excel' : 'CSV'} file size exceeds ${maxSizeLabel} limit${isExcel ? '. For larger datasets, please convert to CSV format.' : ''}`;
     }
@@ -68,7 +68,7 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
 
       const response = await apiRequest("POST", "/api/upload", formData);
       const data = await response.json() as FileData;
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
 
@@ -118,13 +118,13 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-['Cairo']">
       <div className="text-center space-y-2">
         <h2 className="text-4xl font-semibold text-foreground">
-          Drop your file here
+          أفلت الملف هنا
         </h2>
         <p className="text-base text-muted-foreground">
-          Upload Excel or CSV files to preview your data
+          قم بتحميل ملفات Excel أو CSV لمعاينة بياناتك
         </p>
       </div>
 
@@ -132,8 +132,8 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
         className={`
           min-h-64 lg:min-h-80 p-8 
           border-2 border-dashed transition-all duration-200
-          ${isDragging 
-            ? "border-primary bg-primary/5 scale-[1.02]" 
+          ${isDragging
+            ? "border-primary bg-primary/5 scale-[1.02]"
             : "border-border bg-card/80 backdrop-blur-sm"
           }
         `}
@@ -151,7 +151,7 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-medium text-foreground">
-                    Processing file...
+                    جارٍ معالجة الملف...
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {uploadProgress}%
@@ -165,19 +165,19 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
               <div className="h-12 w-12 lg:h-16 lg:w-16 rounded-full bg-primary/10 flex items-center justify-center">
                 <CloudUpload className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
               </div>
-              
+
               <div className="text-center space-y-2">
                 <p className="text-lg font-medium text-foreground">
-                  Drag and drop your file here
+                  اسحب وأفلت ملفك هنا
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  CSV up to 1GB • Excel up to 100MB
+                  CSV حتى 1 جيجابايت • Excel حتى 100 ميجابايت
                 </p>
               </div>
 
               <div className="flex items-center gap-4 w-full max-w-xs">
                 <div className="flex-1 h-px bg-border" />
-                <span className="text-sm text-muted-foreground">or</span>
+                <span className="text-sm text-muted-foreground">أو</span>
                 <div className="flex-1 h-px bg-border" />
               </div>
 
@@ -185,11 +185,11 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
                 <Button
                   type="button"
                   size="lg"
-                  className="cursor-pointer"
+                  className="cursor-pointer font-['Cairo']"
                   onClick={() => document.getElementById('file-input')?.click()}
                   data-testid="button-browse"
                 >
-                  Browse Files
+                  تصفح الملفات
                 </Button>
               </label>
               <input

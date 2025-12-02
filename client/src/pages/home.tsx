@@ -28,15 +28,15 @@ export default function Home() {
         <header className="py-8 px-4 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
-                <FileSpreadsheet className="h-6 w-6 text-primary" />
+              <div className="h-12 w-12 rounded-md bg-white/90 flex items-center justify-center shadow-sm overflow-hidden">
+                <img src="/logo.png" alt="Badawood Foundation Logo" className="h-full w-full object-contain" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-foreground">
-                  File Upload
+                <h1 className="text-2xl font-bold text-foreground font-['Cairo']">
+                  مؤسسة باداود لتحلية المياه
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Upload & Preview Excel/CSV Files
+                <p className="text-sm text-muted-foreground font-['Cairo']">
+                  Badawood Water Desalination Foundation
                 </p>
               </div>
             </div>

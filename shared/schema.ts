@@ -10,7 +10,35 @@ export const fileDataSchema = z.object({
   headers: z.array(z.string()),
   rows: z.array(z.array(z.any())),
   totalRows: z.number(),
+  uniqueNeighborhoods: z.array(z.string()),
+  uniqueStatuses: z.array(z.string()),
+  tempFileName: z.string(),
 });
+
+export const filterRequestSchema = z.object({
+  filePath: z.string(),
+  neighborhoods: z.array(z.string()).optional(),
+  statuses: z.array(z.string()).optional(),
+  dateRange: z.object({
+    from: z.string().optional(),
+    to: z.string().optional(),
+  }).optional(),
+});
+
+export const sendRequestSchema = z.object({
+  tempFileName: z.string(),
+  filters: z.object({
+    neighborhoods: z.array(z.string()).optional(),
+    statuses: z.array(z.string()).optional(),
+    dateRange: z.object({
+      from: z.string().optional(),
+      to: z.string().optional(),
+    }).optional(),
+  }),
+});
+
+export type FilterRequest = z.infer<typeof filterRequestSchema>;
+export type SendRequest = z.infer<typeof sendRequestSchema>;
 
 export type FileData = z.infer<typeof fileDataSchema>;
 

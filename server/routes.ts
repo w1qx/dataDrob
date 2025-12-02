@@ -7,28 +7,36 @@ import {
   MAX_FILE_SIZE_CSV,
   MAX_FILE_SIZE_EXCEL,
   fileDataSchema,
+  filterRequestSchema,
+  sendRequestSchema,
 } from "@shared/schema";
-import { unlink, copyFile, mkdir } from "fs/promises";
-import { createReadStream } from "fs";
+import { unlink, copyFile, mkdir, readFile, writeFile } from "fs/promises";
+import { createReadStream, existsSync } from "fs";
 import path from "path";
 import { tmpdir } from "os";
+import { parse, isValid, isWithinInterval, format } from "date-fns";
 
-const OUTPUT_FILE_PATH = "/var/www/html/whatsapp-web/customers.xls";
+// Final output path (local folder)
+const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+const TEMP_DIR = path.join(UPLOADS_DIR, "temp");
+const FINAL_DIR = path.join(UPLOADS_DIR, "final");
+const FINAL_FILE_PATH = path.join(FINAL_DIR, "customers.xls");
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Ensure directories exist
+  await mkdir(TEMP_DIR, { recursive: true });
+  await mkdir(FINAL_DIR, { recursive: true });
+
   // Configure multer for disk-based file uploads
   const upload = multer({
     storage: multer.diskStorage({
-      destination: tmpdir(),
+      destination: TEMP_DIR, // Save directly to temp dir
       filename: (req, file, cb) => {
         const uniqueSuffix =
           Date.now() + "-" + Math.round(Math.random() * 1e9);
         cb(
           null,
-          file.fieldname +
-            "-" +
-            uniqueSuffix +
-            path.extname(file.originalname),
+          uniqueSuffix + path.extname(file.originalname),
         );
       },
     }),
@@ -54,6 +62,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   });
 
+  // Helper to extract unique values
+  const extractUniqueValues = (rows: any[], headers: string[]) => {
+    const neighborhoodIdx = headers.indexOf("عنوان العميل الكامل");
+    const statusIdx = headers.indexOf("الحالة");
+
+    const neighborhoods = new Set<string>();
+    const statuses = new Set<string>();
+
+    if (neighborhoodIdx !== -1 || statusIdx !== -1) {
+      rows.forEach(row => {
+        if (neighborhoodIdx !== -1 && row[neighborhoodIdx]) neighborhoods.add(String(row[neighborhoodIdx]).trim());
+        if (statusIdx !== -1 && row[statusIdx]) statuses.add(String(row[statusIdx]).trim());
+      });
+    }
+
+    return {
+      uniqueNeighborhoods: Array.from(neighborhoods).sort(),
+      uniqueStatuses: Array.from(statuses).sort()
+    };
+  };
+
+  // Helper to format date for display (DD/MM/YYYY)
+  const formatDateForDisplay = (date: Date): string => {
+    return format(date, 'dd/MM/yyyy');
+  };
+
+  // Helper to filter rows
+  const filterRows = (rows: any[], headers: string[], filters: any) => {
+    const neighborhoodIdx = headers.indexOf("عنوان العميل الكامل");
+    const statusIdx = headers.indexOf("الحالة");
+    const dateIdx = headers.indexOf("التاريخ");
+
+    return rows.filter(row => {
+      // Filter by Neighborhood
+      if (filters.neighborhoods && filters.neighborhoods.length > 0 && neighborhoodIdx !== -1) {
+        const val = String(row[neighborhoodIdx] || "").trim();
+        if (!filters.neighborhoods.includes(val)) return false;
+      }
+
+      // Filter by Status
+      if (filters.statuses && filters.statuses.length > 0 && statusIdx !== -1) {
+        const val = String(row[statusIdx] || "").trim();
+        if (!filters.statuses.includes(val)) return false;
+      }
+
+      // Filter by Date
+      if (filters.dateRange && (filters.dateRange.from || filters.dateRange.to) && dateIdx !== -1) {
+        const cellValue = row[dateIdx];
+        let parsedDate: Date | null = null;
+
+        if (cellValue instanceof Date) {
+          parsedDate = cellValue;
+        } else if (typeof cellValue === 'string') {
+          // Try parsing string formats if it came as string
+          // Try DD/MM/YYYY
+          const d = parse(cellValue.trim(), 'dd/MM/yyyy', new Date());
+          if (isValid(d)) parsedDate = d;
+          else {
+            // Try MM/DD/YYYY or other formats if needed, or just new Date(str)
+            const d2 = new Date(cellValue);
+            if (isValid(d2)) parsedDate = d2;
+          }
+        }
+
+        if (parsedDate && isValid(parsedDate)) {
+          // Reset time part for comparison
+          parsedDate.setHours(0, 0, 0, 0);
+
+          if (filters.dateRange.from) {
+            const fromDate = new Date(filters.dateRange.from);
+            fromDate.setHours(0, 0, 0, 0);
+            if (parsedDate < fromDate) return false;
+          }
+          if (filters.dateRange.to) {
+            const toDate = new Date(filters.dateRange.to);
+            toDate.setHours(0, 0, 0, 0);
+            if (parsedDate > toDate) return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // Helper to process rows for output (format dates)
+  const processRowsForOutput = (rows: any[], headers: string[]) => {
+    const dateIdx = headers.indexOf("التاريخ");
+    if (dateIdx === -1) return rows;
+
+    return rows.map(row => {
+      const newRow = [...row];
+      if (newRow[dateIdx] instanceof Date) {
+        newRow[dateIdx] = formatDateForDisplay(newRow[dateIdx]);
+      }
+      return newRow;
+    });
+  };
+
   // File upload endpoint
   app.post("/api/upload", upload.single("file"), async (req, res) => {
     let filePath: string | undefined;
@@ -73,6 +180,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         file.mimetype.includes("spreadsheet") ||
         file.mimetype.includes("ms-excel");
       if (isExcel && file.size > MAX_FILE_SIZE_EXCEL) {
+        // Clean up immediately if too large
+        await unlink(filePath).catch(() => { });
         return res.status(413).json({
           error:
             "Excel files are limited to 100MB due to memory constraints. For larger datasets, please convert to CSV format (up to 1GB supported).",
@@ -82,41 +191,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let headers: string[] = [];
       let rows: any[][] = [];
       let totalRows = 0;
+      let uniqueNeighborhoods: string[] = [];
+      let uniqueStatuses: string[] = [];
 
       // Parse based on file type
       if (file.mimetype.includes("csv") || file.originalname.endsWith(".csv")) {
-        // Parse CSV from disk - only keep first 20 rows, count the rest
+        // Parse CSV from disk
         await new Promise<void>((resolve, reject) => {
           let headersParsed = false;
-          let rowCount = 0;
-          const previewRows: any[][] = [];
-          const PREVIEW_LIMIT = 20;
+          const allRows: any[][] = [];
 
           Papa.parse(createReadStream(filePath!), {
             header: false,
             skipEmptyLines: true,
-            chunk: (results) => {
-              const data = results.data as any[][];
-
-              for (const row of data) {
-                if (!headersParsed) {
-                  // First row is headers
-                  headers = row.map((h: any, i: number) =>
-                    h ? String(h) : `Column ${i + 1}`,
-                  );
-                  headersParsed = true;
-                } else {
-                  // Data rows
-                  rowCount++;
-                  if (previewRows.length < PREVIEW_LIMIT) {
-                    previewRows.push(row);
-                  }
-                }
+            step: (results) => {
+              const row = results.data as any[];
+              if (!headersParsed) {
+                headers = row.map((h: any, i: number) => h ? String(h) : `Column ${i + 1}`);
+                headersParsed = true;
+              } else {
+                allRows.push(row);
               }
             },
             complete: () => {
-              rows = previewRows;
-              totalRows = rowCount;
+              rows = allRows;
+              totalRows = rows.length;
+              const unique = extractUniqueValues(rows, headers);
+              uniqueNeighborhoods = unique.uniqueNeighborhoods;
+              uniqueStatuses = unique.uniqueStatuses;
               resolve();
             },
             error: (error) => {
@@ -125,40 +227,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
       } else {
-        // Parse Excel from disk - only read first 21 rows (header + 20 data rows)
-        const PREVIEW_LIMIT = 21; // 1 header + 20 data rows
-
-        // Read only preview rows - use !fullref to get total count
-        const workbook = XLSX.readFile(filePath, {
-          sheetRows: PREVIEW_LIMIT,
-        });
+        // Parse Excel from disk
+        // Use cellDates: true to get Date objects
+        const workbook = XLSX.readFile(filePath, { cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
 
-        // Get total row count from !fullref (contains full range even with sheetRows limit)
-        const fullRef = worksheet["!fullref"] || worksheet["!ref"] || "A1";
-        const range = XLSX.utils.decode_range(fullRef);
-        totalRows = Math.max(0, range.e.r); // Total rows (0-indexed, includes header)
-
-        // Parse the preview data
-        const previewData = XLSX.utils.sheet_to_json(worksheet, {
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
           header: 1,
           defval: null,
-          raw: false,
+          raw: true, // Get raw values (Dates)
         }) as any[][];
 
-        if (previewData.length > 0) {
-          headers = previewData[0].map((h: any, i: number) =>
+        if (jsonData.length > 0) {
+          headers = jsonData[0].map((h: any, i: number) =>
             h ? String(h) : `Column ${i + 1}`,
           );
-          rows = previewData.slice(1);
-          // totalRows is 0-indexed, so actual row count is totalRows
-          // But we need to subtract 1 for the header row to get data row count
-          totalRows = totalRows > 0 ? totalRows : rows.length;
+          rows = jsonData.slice(1);
+          totalRows = rows.length;
+
+          const unique = extractUniqueValues(rows, headers);
+          uniqueNeighborhoods = unique.uniqueNeighborhoods;
+          uniqueStatuses = unique.uniqueStatuses;
         }
       }
 
       // Prepare response data
+      // For preview, we want formatted dates
+      const previewRows = processRowsForOutput(rows.slice(0, 20), headers);
+
       const fileData = {
         fileName: file.originalname,
         fileSize: file.size,
@@ -166,55 +263,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rowCount: Math.min(rows.length, 20),
         columnCount: headers.length,
         headers,
-        rows: rows.slice(0, 20), // Only send first 20 rows for preview
+        rows: previewRows, // Only send first 20 rows for preview
         totalRows,
+        uniqueNeighborhoods,
+        uniqueStatuses,
+        tempFileName: file.filename, // Return the temp filename
       };
 
       // Validate response
       const validatedData = fileDataSchema.parse(fileData);
 
-      // 👉 Save / overwrite the uploaded file to your desired path
-      try {
-        // Make sure the directory exists
-        await mkdir(path.dirname(OUTPUT_FILE_PATH), { recursive: true });
+      // We DO NOT save to final path here anymore. 
+      // The file is already in TEMP_DIR because multer saved it there.
 
-        // Copy the temp file to /var/www/html/whatsapp-web/customers.xls
-        await copyFile(filePath!, OUTPUT_FILE_PATH);
-      } catch (copyError) {
-        console.error("Failed to save uploaded file:", copyError);
-        return res.status(500).json({
-          error: "Failed to save uploaded file",
-        });
-      }
-
-      // Send the same preview data back to the frontend
       res.json(validatedData);
     } catch (error) {
       console.error("File upload error:", error);
+      // Clean up temp file on error
+      if (filePath) {
+        await unlink(filePath).catch(() => { });
+      }
 
       if (error instanceof Error) {
-        if (error.message.includes("File too large")) {
-          return res.status(413).json({
-            error: "File size exceeds 1GB limit",
-          });
-        }
-        return res.status(400).json({
-          error: error.message,
-        });
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: "Failed to process file" });
+    }
+  });
+
+  // Filter endpoint (Preview)
+  app.post("/api/filter", async (req, res) => {
+    try {
+      const { neighborhoods, statuses, dateRange, filePath } = filterRequestSchema.parse(req.body);
+
+      // Use the temp file if provided (filePath here is actually the tempFileName from frontend)
+      // Or fallback to final file if we wanted to support filtering existing files, but for now let's assume temp flow.
+      // The frontend sends "customers.xls" currently, we need to update that to send the tempFileName.
+
+      // Check if it's a temp file
+      let targetPath = path.join(TEMP_DIR, filePath);
+      if (!existsSync(targetPath)) {
+        // Fallback to final path if not found in temp (legacy support or if we want to filter the last sent file)
+        targetPath = FINAL_FILE_PATH;
       }
 
-      res.status(500).json({
-        error: "Failed to process file",
-      });
-    } finally {
-      // Clean up temp file
-      if (filePath) {
-        try {
-          await unlink(filePath);
-        } catch (err) {
-          console.error("Failed to delete temp file:", err);
-        }
+      if (!existsSync(targetPath)) {
+        return res.status(404).json({ error: "File not found" });
       }
+
+      let rows: any[][] = [];
+      let headers: string[] = [];
+
+      // Read with cellDates: true
+      const workbook = XLSX.readFile(targetPath, { cellDates: true });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: null,
+        raw: true,
+      }) as any[][];
+
+      if (jsonData.length > 0) {
+        headers = jsonData[0].map((h: any, i: number) => h ? String(h) : `Column ${i + 1}`);
+        rows = jsonData.slice(1);
+      }
+
+      const filteredRows = filterRows(rows, headers, { neighborhoods, statuses, dateRange });
+      const previewRows = processRowsForOutput(filteredRows.slice(0, 20), headers);
+
+      res.json({
+        rows: previewRows, // Preview limit
+        totalRows: filteredRows.length
+      });
+
+    } catch (error) {
+      console.error("Filter error:", error);
+      res.status(500).json({ error: "Failed to filter data" });
+    }
+  });
+
+  // Send endpoint (Final Save)
+  app.post("/api/send", async (req, res) => {
+    try {
+      const { tempFileName, filters } = sendRequestSchema.parse(req.body);
+      const tempPath = path.join(TEMP_DIR, tempFileName);
+
+      if (!existsSync(tempPath)) {
+        return res.status(404).json({ error: "Temporary file not found or expired" });
+      }
+
+      // Read temp file with cellDates: true
+      const workbook = XLSX.readFile(tempPath, { cellDates: true });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: null,
+        raw: true,
+      }) as any[][];
+
+      let headers: string[] = [];
+      let rows: any[][] = [];
+
+      if (jsonData.length > 0) {
+        headers = jsonData[0].map((h: any, i: number) => h ? String(h) : `Column ${i + 1}`);
+        rows = jsonData.slice(1);
+      }
+
+      // Apply filters
+      const filteredRows = filterRows(rows, headers, filters);
+
+      // Create new workbook with filtered data
+      // Note: filteredRows contains Date objects. json_to_sheet handles them.
+      const newWorksheet = XLSX.utils.json_to_sheet([headers, ...filteredRows], { skipHeader: true });
+      const newWorkbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, "Customers");
+
+      // Save to final destination
+      XLSX.writeFile(newWorkbook, FINAL_FILE_PATH);
+
+      res.json({ success: true, message: "File processed and saved successfully" });
+
+    } catch (error) {
+      console.error("Send error:", error);
+      res.status(500).json({ error: "Failed to send file" });
     }
   });
 

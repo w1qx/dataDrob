@@ -527,7 +527,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               console.log(`Sending message to ${phone}...`);
 
-              const token = "YOUR_TOKEN_HERE"; // User to replace this
+              const token = process.env.WHATSAPP_API_TOKEN || "YOUR_TOKEN_HERE";
+
               if (token === "YOUR_TOKEN_HERE") {
                 console.warn("Warning: Using placeholder token. API calls will likely fail.");
               }

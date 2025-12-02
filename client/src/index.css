@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,7 +11,7 @@
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0, 0, 0, .03);
   --elevate-2: rgba(0, 0, 0, .08);
-  --font-sans: Inter, sans-serif;
+  --font-sans: 'IBM Plex Sans Arabic', sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .375rem;
@@ -24,55 +26,58 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-  /* Base Variables (Light Mode) */
-  --background: 0 0% 100%;
-  --foreground: 222 15% 8%;
+  /* Base Variables (Light Mode - Premium Water Theme) */
+  --background: 210 40% 98%;
+  /* Very light blue-grey */
+  --foreground: 222 47% 11%;
+
   --card: 0 0% 100%;
-  --card-foreground: 222 15% 8%;
+  --card-foreground: 222 47% 11%;
+
   --popover: 0 0% 100%;
-  --popover-foreground: 222 15% 8%;
-  --primary: 195 85% 45%;
+  --popover-foreground: 222 47% 11%;
+
+  --primary: 199 89% 48%;
+  /* Bright Cyan/Blue */
   --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222 47% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222 47% 11.2%;
-  --destructive: 0 84.2% 60.2%;
+
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+
+  --accent: 199 89% 95%;
+  /* Very light cyan for hover states */
+  --accent-foreground: 222 47% 11%;
+
+  --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 195 85% 45%;
-  --radius: 0.5rem;
 
-  /* Fallback for older browsers */
-  --sidebar-primary-border: hsl(var(--sidebar-primary));
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 199 89% 48%;
 
-  /* Fallback for older browsers */
-  --sidebar-accent-border: hsl(var(--sidebar-accent));
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --radius: 1rem;
+  /* More rounded */
+}
 
-  /* Fallback for older browsers */
-  --primary-border: hsl(var(--primary));
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+@layer utilities {
+  .glass-card {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border border-white/20 dark:border-slate-700/30 shadow-xl;
+  }
 
-  /* Fallback for older browsers */
-  --secondary-border: hsl(var(--secondary));
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  .glass-panel {
+    @apply bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border border-white/10 dark:border-slate-700/20 shadow-sm;
+  }
 
-  /* Fallback for older browsers */
-  --muted-border: hsl(var(--muted));
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400;
+  }
 
-  /* Fallback for older browsers */
-  --accent-border: hsl(var(--accent));
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
-  /* Fallback for older browsers */
-  --destructive-border: hsl(var(--destructive));
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  .btn-gradient {
+    @apply bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300;
+  }
 }
 
 .dark {
@@ -81,48 +86,49 @@
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255, 255, 255, .04);
   --elevate-2: rgba(255, 255, 255, .09);
-  --background: 222 15% 8%;
-  --foreground: 220 6% 96%;
-  --border: 222 12% 18%;
-  --card: 222 14% 10%;
-  --card-foreground: 220 6% 96%;
-  --card-border: 222 12% 14%;
-  --sidebar: 222 13% 12%;
-  --sidebar-foreground: 220 6% 96%;
-  --sidebar-border: 222 12% 16%;
-  --sidebar-primary: 174 72% 52%;
-  --sidebar-primary-foreground: 222 15% 8%;
-  --sidebar-accent: 222 12% 16%;
-  --sidebar-accent-foreground: 220 6% 96%;
-  --sidebar-ring: 174 72% 52%;
-  --popover: 222 12% 14%;
-  --popover-foreground: 220 6% 96%;
-  --popover-border: 222 12% 18%;
-  --primary: 174 72% 52%;
-  --primary-foreground: 222 15% 8%;
-  --secondary: 222 10% 18%;
-  --secondary-foreground: 220 6% 96%;
-  --muted: 222 10% 16%;
-  --muted-foreground: 220 8% 72%;
-  --accent: 222 12% 15%;
-  --accent-foreground: 220 6% 96%;
-  --destructive: 0 84% 35%;
-  --destructive-foreground: 0 84% 98%;
-  --input: 222 10% 35%;
-  --ring: 174 72% 52%;
-  --chart-1: 217 91% 65%;
-  --chart-2: 200 82% 68%;
-  --chart-3: 174 72% 62%;
-  --chart-4: 145 63% 65%;
-  --chart-5: 280 65% 70%;
-  --shadow-2xs: 0px 2px 0px 0px hsl(222 12% 5% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(222 12% 5% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(222 12% 5% / 0.00), 0px 1px 2px -1px hsl(222 12% 5% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(222 12% 5% / 0.00), 0px 1px 2px -1px hsl(222 12% 5% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(222 12% 5% / 0.00), 0px 2px 4px -1px hsl(222 12% 5% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(222 12% 5% / 0.00), 0px 4px 6px -1px hsl(222 12% 5% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(222 12% 5% / 0.00), 0px 8px 10px -1px hsl(222 12% 5% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(222 12% 5% / 0.00);
+
+  /* Dark Mode - Deep Ocean Theme */
+  --background: 222 47% 11%;
+  /* Deep Blue */
+  --foreground: 210 40% 98%;
+
+  --card: 217 33% 17%;
+  /* Lighter Deep Blue */
+  --card-foreground: 210 40% 98%;
+
+  --popover: 217 33% 17%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 199 89% 48%;
+  /* Bright Cyan */
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 217 33% 22%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217 33% 22%;
+  --muted-foreground: 215 20% 65%;
+
+  --accent: 217 33% 22%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217 33% 22%;
+  --input: 217 33% 22%;
+  --ring: 199 89% 48%;
+
+  --radius: 1rem;
+
+  --shadow-2xs: 0px 2px 0px 0px rgba(0, 0, 0, 0.5);
+  --shadow-xs: 0px 2px 0px 0px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0px 2px 0px 0px rgba(0, 0, 0, 0.5), 0px 1px 2px -1px rgba(0, 0, 0, 0.5);
+  --shadow: 0px 2px 0px 0px rgba(0, 0, 0, 0.5), 0px 1px 2px -1px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0px 2px 0px 0px rgba(0, 0, 0, 0.5), 0px 2px 4px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0px 2px 0px 0px rgba(0, 0, 0, 0.5), 0px 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0px 2px 0px 0px rgba(0, 0, 0, 0.5), 0px 8px 10px -1px rgba(0, 0, 0, 0.5);
+  --shadow-2xl: 0px 2px 0px 0px rgba(0, 0, 0, 0.5);
 
   /* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));

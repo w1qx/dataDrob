@@ -7,7 +7,7 @@ import { FilterBar } from "@/components/filter-bar";
 import { FileData } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { FileSpreadsheet, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
@@ -116,87 +116,93 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative">
-      <AnimatedGradient />
+      <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 font-['Cairo'] relative overflow-hidden">
+        <AnimatedGradient />
 
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="py-8 px-4 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-md bg-white/90 flex items-center justify-center shadow-sm overflow-hidden">
-                <img src="/logo.png" alt="Badawood Foundation Logo" className="h-full w-full object-contain" />
+        <div className="w-full max-w-6xl glass-card rounded-3xl p-6 md:p-10 animate-in fade-in zoom-in duration-500">
+          <div className="flex flex-col gap-8">
+
+            {/* Header */}
+            <div className="flex flex-col items-center justify-center text-center space-y-4 pb-6 border-b border-gray-100/50">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                <img
+                  src="/logo.png"
+                  alt="Logo"
+                  className="relative h-24 w-auto object-contain drop-shadow-md transform transition-transform group-hover:scale-105 duration-300"
+                />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground font-['Cairo']">
+              <div className="space-y-1">
+                <h1 className="text-4xl font-bold text-gradient tracking-tight">
                   مؤسسة باداود لتحلية المياه
                 </h1>
-                <p className="text-sm text-muted-foreground font-['Cairo']">
-                  Badawood Water Desalination Foundation
+                <p className="text-muted-foreground font-medium text-lg">
+                  خدمات تحلية مياه عالية الجودة
                 </p>
               </div>
             </div>
-          </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="px-4 lg:px-8 pb-16">
-          {!fileData ? (
-            <div className="max-w-4xl mx-auto">
-              <FileUploadZone
-                onUpload={handleFileUpload}
-                isUploading={isUploading}
-                setIsUploading={setIsUploading}
-              />
-            </div>
-          ) : (
+            {/* Main Content */}
             <div className="space-y-8">
-              <div className="max-w-4xl mx-auto">
-                <FileInfoCard
-                  fileData={fileData}
-                  onRemove={handleRemoveFile}
+              {!fileData ? (
+                <FileUploadZone
+                  onUpload={handleFileUpload}
+                  isUploading={isUploading}
+                  setIsUploading={setIsUploading}
                 />
-              </div>
+              ) : (
+                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+                  <FileInfoCard
+                    fileData={fileData}
+                    onRemove={handleRemoveFile}
+                  />
 
-              <div className="max-w-6xl mx-auto space-y-4">
-                <FilterBar
-                  neighborhoods={fileData.uniqueNeighborhoods || []}
-                  statuses={fileData.uniqueStatuses || []}
-                  onFilterChange={handleFilterChange}
-                />
+                  <div className="glass-panel rounded-2xl p-6 shadow-sm">
+                    <FilterBar
+                      neighborhoods={fileData.uniqueNeighborhoods || []}
+                      statuses={fileData.uniqueStatuses || []}
+                      onFilterChange={handleFilterChange}
+                    />
 
-                {displayData && <DataPreviewTable fileData={displayData} />}
+                    <div className="mt-6">
+                      {displayData && (
+                        <DataPreviewTable
+                          fileData={{
+                            ...fileData,
+                            rows: displayData.rows,
+                            totalRows: displayData.totalRows
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
 
-                <div className="flex justify-end pt-4">
-                  <Button
-                    size="lg"
-                    onClick={handleSend}
-                    disabled={isSending}
-                    className="gap-2 font-['Cairo'] min-w-[150px]"
-                  >
-                    {isSending ? (
-                      "جارٍ الارسال..."
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4" />
-                        ارسال
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      size="lg"
+                      className="bg-[#6AC1E8] hover:bg-[#5AB1D8] text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 min-w-[200px] text-lg h-12 rounded-full"
+                      onClick={handleSend}
+                      disabled={isSending}
+                    >
+                      {isSending ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          جاري الارسال...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-5 w-5" />
+                          ارسال
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
-        </main>
-
-        {/* Footer */}
-        <footer className="py-8 px-4 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <p className="text-sm text-muted-foreground font-['Cairo']">
-              CSV حتى 1 جيجابايت • Excel حتى 100 ميجابايت
-            </p>
           </div>
-        </footer>
+        </div>
       </div>
-    </div>
+    </div >
   );
 }

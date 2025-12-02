@@ -254,16 +254,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Prepare response data
       // For preview, we want formatted dates
-      const previewRows = processRowsForOutput(rows.slice(0, 20), headers);
+      const previewRows = processRowsForOutput(rows, headers);
 
       const fileData = {
         fileName: file.originalname,
         fileSize: file.size,
         fileType: file.mimetype,
-        rowCount: Math.min(rows.length, 20),
+        rowCount: rows.length,
         columnCount: headers.length,
         headers,
-        rows: previewRows, // Only send first 20 rows for preview
+        rows: previewRows,
         totalRows,
         uniqueNeighborhoods,
         uniqueStatuses,
@@ -331,10 +331,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const filteredRows = filterRows(rows, headers, { neighborhoods, statuses, dateRange });
-      const previewRows = processRowsForOutput(filteredRows.slice(0, 20), headers);
+      const previewRows = processRowsForOutput(filteredRows, headers);
 
       res.json({
-        rows: previewRows, // Preview limit
+        rows: previewRows,
         totalRows: filteredRows.length
       });
 

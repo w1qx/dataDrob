@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { FileData, MAX_FILE_SIZE_CSV, MAX_FILE_SIZE_EXCEL } from "@shared/schema";
-import { CloudUpload, FileSpreadsheet } from "lucide-react";
+import { CloudUpload, FileSpreadsheet, Upload } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface FileUploadZoneProps {
@@ -23,16 +23,16 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
     const validExtensions = ['xlsx', 'xls', 'csv'];
 
     if (!fileExtension || !validExtensions.includes(fileExtension)) {
-      return "Invalid file type. Please upload Excel (.xlsx, .xls) or CSV files";
+      return "نوع الملف غير صالح. يرجى رفع ملفات Excel (.xlsx, .xls) أو CSV";
     }
 
     // Different size limits for Excel vs CSV
     const isExcel = fileExtension === 'xlsx' || fileExtension === 'xls';
     const maxSize = isExcel ? MAX_FILE_SIZE_EXCEL : MAX_FILE_SIZE_CSV;
-    const maxSizeLabel = isExcel ? "100MB" : "1GB";
+    const maxSizeLabel = isExcel ? "100 ميجابايت" : "1 جيجابايت";
 
     if (file.size > maxSize) {
-      return `${isExcel ? 'Excel' : 'CSV'} file size exceeds ${maxSizeLabel} limit${isExcel ? '. For larger datasets, please convert to CSV format.' : ''}`;
+      return `حجم ملف ${isExcel ? 'Excel' : 'CSV'} يتجاوز حد ${maxSizeLabel}${isExcel ? '. للملفات الأكبر، يرجى التحويل إلى صيغة CSV.' : ''}`;
     }
 
     return null;
@@ -43,7 +43,7 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
     if (validationError) {
       toast({
         variant: "destructive",
-        title: "Upload Failed",
+        title: "فشل الرفع",
         description: validationError,
       });
       return;
@@ -75,8 +75,8 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
       setTimeout(() => {
         onUpload(data);
         toast({
-          title: "Upload Successful",
-          description: `${file.name} has been processed successfully`,
+          title: "تم الرفع بنجاح",
+          description: `تمت معالجة ملف ${file.name} بنجاح`,
         });
       }, 300);
     } catch (error) {
@@ -84,8 +84,8 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
       setUploadProgress(0);
       toast({
         variant: "destructive",
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Failed to process file",
+        title: "فشل الرفع",
+        description: error instanceof Error ? error.message : "فشل في معالجة الملف",
       });
     }
   };
@@ -121,29 +121,16 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
     <div className="space-y-8 font-['Cairo']">
       <div className="text-center space-y-2">
         <h2 className="text-4xl font-semibold text-foreground">
-          أفلت الملف هنا
+          اسحب الملف هنا
         </h2>
         <p className="text-base text-muted-foreground">
-          قم بتحميل ملفات Excel أو CSV لمعاينة بياناتك
+          قم برفع الملفات لمعاينة بياناتك
         </p>
       </div>
 
-      <Card
-        className={`
-          min-h-64 lg:min-h-80 p-8 
-          border-2 border-dashed transition-all duration-200
-          ${isDragging
-            ? "border-primary bg-primary/5 scale-[1.02]"
-            : "border-border bg-card/80 backdrop-blur-sm"
-          }
-        `}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        data-testid="dropzone-upload"
-      >
-        <div className="h-full flex flex-col items-center justify-center gap-6">
-          {isUploading ? (
+      {isUploading ? (
+        <Card className="min-h-64 lg:min-h-80 p-8 border-2 border-dashed border-border bg-card/80 backdrop-blur-sm">
+          <div className="h-full flex flex-col items-center justify-center gap-6">
             <div className="w-full max-w-md space-y-4">
               <div className="flex flex-col items-center gap-4">
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
@@ -160,50 +147,73 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
               </div>
               <Progress value={uploadProgress} className="h-2" data-testid="progress-upload" />
             </div>
-          ) : (
-            <>
-              <div className="h-12 w-12 lg:h-16 lg:w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <CloudUpload className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
-              </div>
+          </div>
+        </Card>
+      ) : (
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => document.getElementById('file-input')?.click()}
+          className={`
+            relative overflow-hidden rounded-3xl border-2 border-dashed transition-all duration-500 ease-out
+            flex flex-col items-center justify-center p-12 text-center cursor-pointer
+            group hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10
+            ${isDragging
+              ? "border-primary bg-primary/5 scale-[1.02] shadow-xl shadow-primary/20"
+              : "border-gray-200 dark:border-gray-700 bg-white/40 dark:bg-slate-900/40 hover:bg-white/60 dark:hover:bg-slate-900/60"
+            }
+          `}
+        >
+          <input
+            id="file-input"
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
 
-              <div className="text-center space-y-2">
-                <p className="text-lg font-medium text-foreground">
-                  اسحب وأفلت ملفك هنا
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  CSV حتى 1 جيجابايت • Excel حتى 100 ميجابايت
-                </p>
-              </div>
+          <div className={`
+            p-8 rounded-full bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-slate-800 dark:to-slate-900 mb-8
+            group-hover:scale-110 transition-transform duration-500 shadow-inner
+            relative
+          `}>
+            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <Upload className={`
+              h-16 w-16 text-primary relative z-10
+              ${isDragging ? "animate-bounce" : "group-hover:text-cyan-600"}
+              transition-colors duration-300
+            `} />
+          </div>
 
-              <div className="flex items-center gap-4 w-full max-w-xs">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-sm text-muted-foreground">أو</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
+          <div className="space-y-4 relative z-10">
+            <h3 className="text-3xl font-bold text-gray-800 dark:text-gray-100 group-hover:text-primary transition-colors duration-300 tracking-tight">
+              {isDragging ? "ضع الملف هنا" : "سحب  ملف "}
+            </h3>
+            <p className="text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed font-medium">
+              قم بسحب الملف هنا، أو انقر لاختيار ملف من جهازك
+            </p>
+          </div>
 
-              <label htmlFor="file-input">
-                <Button
-                  type="button"
-                  size="lg"
-                  className="cursor-pointer font-['Cairo']"
-                  onClick={() => document.getElementById('file-input')?.click()}
-                  data-testid="button-browse"
-                >
-                  تصفح الملفات
-                </Button>
-              </label>
-              <input
-                id="file-input"
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                className="hidden"
-                onChange={handleFileSelect}
-                data-testid="input-file"
-              />
-            </>
-          )}
+          <div className="mt-10">
+            <Button
+              variant="outline"
+              className="rounded-full px-10 py-7 text-xl border-2 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                document.getElementById('file-input')?.click();
+              }}
+            >
+              استعراض الملفات
+            </Button>
+          </div>
+
+          {/* Decorative elements */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-500"></div>
+          <div className="absolute -top-20 -left-20 w-64 h-64 bg-cyan-400/5 rounded-full blur-3xl group-hover:bg-cyan-400/10 transition-colors duration-500"></div>
         </div>
-      </Card>
+      )}
     </div>
   );
 }

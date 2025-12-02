@@ -43,13 +43,13 @@ export function FileInfoCard({ fileData, onRemove }: FileInfoCardProps) {
               {getFileTypeLabel(fileData.fileType)}
             </Badge>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span data-testid="text-filesize">{formatFileSize(fileData.fileSize)}</span>
             <span className="text-border">•</span>
-            <span data-testid="text-rowcount">{fileData.totalRows.toLocaleString()} rows</span>
+            <span data-testid="text-rowcount">{fileData.totalRows.toLocaleString()} صف</span>
             <span className="text-border">•</span>
-            <span data-testid="text-columncount">{fileData.columnCount} columns</span>
+            <span data-testid="text-columncount">{fileData.columnCount} عمود</span>
           </div>
         </div>
 
@@ -62,8 +62,8 @@ export function FileInfoCard({ fileData, onRemove }: FileInfoCardProps) {
             className="flex-1 lg:flex-initial"
             data-testid="button-remove"
           >
-            <X className="h-4 w-4 lg:mr-2" />
-            <span className="hidden lg:inline">Remove</span>
+            <X className="h-4 w-4 lg:ml-2" />
+            <span className="hidden lg:inline">حذف</span>
           </Button>
           <Button
             variant="outline"
@@ -72,8 +72,8 @@ export function FileInfoCard({ fileData, onRemove }: FileInfoCardProps) {
             className="flex-1 lg:flex-initial"
             data-testid="button-upload-another"
           >
-            <Upload className="h-4 w-4 lg:mr-2" />
-            <span className="hidden lg:inline">Upload Another</span>
+            <Upload className="h-4 w-4 lg:ml-2" />
+            <span className="hidden lg:inline">رفع ملف آخر</span>
           </Button>
         </div>
       </div>

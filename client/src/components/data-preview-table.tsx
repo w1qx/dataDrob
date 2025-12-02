@@ -8,8 +8,8 @@ interface DataPreviewTableProps {
 }
 
 export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
-  const displayRows = fileData.rows.slice(0, 20);
-  const hasMoreRows = fileData.totalRows > displayRows.length;
+  // Show all rows
+  const displayRows = fileData.rows;
 
   return (
     <div className="space-y-4 font-['Cairo']">
@@ -18,23 +18,26 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
           معاينة البيانات
         </h2>
         <p className="text-sm text-muted-foreground" data-testid="text-preview-info">
-          عرض {displayRows.length} من {fileData.totalRows.toLocaleString()} صفوف
+          عرض {fileData.totalRows.toLocaleString()} صفوف
         </p>
       </div>
 
-      <Card className="bg-card/90 backdrop-blur-sm overflow-hidden">
-        <ScrollArea className="w-full">
+      <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm overflow-hidden border-0 shadow-lg rounded-2xl">
+        <ScrollArea className="w-full h-[600px] rounded-2xl">
           <div className="min-w-full">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
+              <TableHeader className="sticky top-0 z-10 bg-[#6AC1E8] shadow-sm border-b border-[#5AB1D8]">
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableHead className="w-[50px] text-white font-bold text-center first:rounded-tr-xl">#</TableHead>
                   {fileData.headers.map((header, index) => (
                     <TableHead
                       key={index}
-                      className="font-semibold text-foreground px-4 py-3 whitespace-nowrap sticky top-0 bg-muted/50 text-right"
-                      data-testid={`header-${index}`}
+                      className={`
+                        text-white font-bold text-right whitespace-nowrap px-6 py-4
+                        ${index === fileData.headers.length - 1 ? 'last:rounded-tl-xl' : ''}
+                      `}
                     >
-                      {header || `عمود ${index + 1}`}
+                      {header}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -43,16 +46,17 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
                 {displayRows.map((row, rowIndex) => (
                   <TableRow
                     key={rowIndex}
-                    className="hover-elevate"
-                    data-testid={`row-${rowIndex}`}
+                    className="hover:bg-cyan-50/50 dark:hover:bg-cyan-900/20 transition-colors duration-200 border-b border-gray-100 dark:border-gray-800 last:border-0 odd:bg-white even:bg-slate-50/50 dark:odd:bg-slate-900 dark:even:bg-slate-800/50"
                   >
-                    {row.map((cell, cellIndex) => (
+                    <TableCell className="font-medium text-center text-muted-foreground bg-gray-50/50 dark:bg-slate-800/50">
+                      {rowIndex + 1}
+                    </TableCell>
+                    {row.map((cell: any, cellIndex: number) => (
                       <TableCell
                         key={cellIndex}
-                        className="px-4 py-2 text-sm text-right"
-                        data-testid={`cell-${rowIndex}-${cellIndex}`}
+                        className="text-right whitespace-nowrap px-6 py-3 text-gray-700 dark:text-gray-300"
                       >
-                        {cell !== null && cell !== undefined ? String(cell) : ""}
+                        {cell}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -61,14 +65,6 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
             </Table>
           </div>
         </ScrollArea>
-
-        {hasMoreRows && (
-          <div className="border-t bg-muted/30 px-4 py-3 text-center">
-            <p className="text-sm text-muted-foreground">
-              {fileData.totalRows - displayRows.length} صفوف إضافية غير معروضة
-            </p>
-          </div>
-        )}
       </Card>
     </div>
   );

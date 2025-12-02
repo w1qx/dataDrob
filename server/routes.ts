@@ -21,6 +21,7 @@ const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 const TEMP_DIR = path.join(UPLOADS_DIR, "temp");
 const FINAL_DIR = path.join(UPLOADS_DIR, "final");
 const FINAL_FILE_PATH = path.join(FINAL_DIR, "customers.xls");
+const CURRENT_METADATA_PATH = path.join(UPLOADS_DIR, "current_metadata.json");
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Ensure directories exist
@@ -273,8 +274,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate response
       const validatedData = fileDataSchema.parse(fileData);
 
-      // We DO NOT save to final path here anymore. 
-      // The file is already in TEMP_DIR because multer saved it there.
+      // Save metadata for persistence
+      const metadata = {
+        fileName: file.originalname,
+        tempFileName: file.filename,
+        fileSize: file.size,
+        fileType: file.mimetype,
+      };
+      await writeFile(CURRENT_METADATA_PATH, JSON.stringify(metadata));
 
       res.json(validatedData);
     } catch (error) {
@@ -288,6 +295,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: "Failed to process file" });
+    }
+  });
+
+  // Get current file endpoint (Persistence)
+  app.get("/api/current-file", async (req, res) => {
+    try {
+      if (!existsSync(CURRENT_METADATA_PATH)) {
+        return res.status(404).json({ error: "No active file" });
+      }
+
+      const metadata = JSON.parse(await readFile(CURRENT_METADATA_PATH, "utf-8"));
+      const filePath = path.join(TEMP_DIR, metadata.tempFileName);
+
+      if (!existsSync(filePath)) {
+        // Metadata exists but file is gone (expired/deleted)
+        await unlink(CURRENT_METADATA_PATH).catch(() => { });
+        return res.status(404).json({ error: "File expired" });
+      }
+
+      // Re-process the file (Reuse logic - ideally refactored, but inline for now to ensure consistency)
+      let headers: string[] = [];
+      let rows: any[][] = [];
+      let totalRows = 0;
+      let uniqueNeighborhoods: string[] = [];
+      let uniqueStatuses: string[] = [];
+
+      if (metadata.fileType.includes("csv") || metadata.fileName.endsWith(".csv")) {
+        await new Promise<void>((resolve, reject) => {
+          let headersParsed = false;
+          const allRows: any[][] = [];
+          Papa.parse(createReadStream(filePath), {
+            header: false,
+            skipEmptyLines: true,
+            step: (results) => {
+              const row = results.data as any[];
+              if (!headersParsed) {
+                headers = row.map((h: any, i: number) => h ? String(h) : `Column ${i + 1}`);
+                headersParsed = true;
+              } else {
+                allRows.push(row);
+              }
+            },
+            complete: () => {
+              rows = allRows;
+              totalRows = rows.length;
+              const unique = extractUniqueValues(rows, headers);
+              uniqueNeighborhoods = unique.uniqueNeighborhoods;
+              uniqueStatuses = unique.uniqueStatuses;
+              resolve();
+            },
+            error: reject,
+          });
+        });
+      } else {
+        const workbook = XLSX.readFile(filePath, { cellDates: true });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null, raw: true }) as any[][];
+
+        if (jsonData.length > 0) {
+          headers = jsonData[0].map((h: any, i: number) => h ? String(h) : `Column ${i + 1}`);
+          rows = jsonData.slice(1);
+          totalRows = rows.length;
+          const unique = extractUniqueValues(rows, headers);
+          uniqueNeighborhoods = unique.uniqueNeighborhoods;
+          uniqueStatuses = unique.uniqueStatuses;
+        }
+      }
+
+      const previewRows = processRowsForOutput(rows, headers);
+      const fileData = {
+        fileName: metadata.fileName,
+        fileSize: metadata.fileSize,
+        fileType: metadata.fileType,
+        rowCount: rows.length,
+        columnCount: headers.length,
+        headers,
+        rows: previewRows,
+        totalRows,
+        uniqueNeighborhoods,
+        uniqueStatuses,
+        tempFileName: metadata.tempFileName,
+      };
+
+      res.json(fileData);
+    } catch (error) {
+      console.error("Get current file error:", error);
+      res.status(500).json({ error: "Failed to retrieve file" });
+    }
+  });
+
+  // Delete current file endpoint
+  app.delete("/api/current-file", async (req, res) => {
+    try {
+      if (existsSync(CURRENT_METADATA_PATH)) {
+        const metadata = JSON.parse(await readFile(CURRENT_METADATA_PATH, "utf-8"));
+        const filePath = path.join(TEMP_DIR, metadata.tempFileName);
+
+        // Delete metadata
+        await unlink(CURRENT_METADATA_PATH).catch(() => { });
+
+        // Optionally delete the temp file too, or leave it for cleanup job
+        // Let's delete it to be clean
+        if (existsSync(filePath)) {
+          await unlink(filePath).catch(() => { });
+        }
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete current file error:", error);
+      res.status(500).json({ error: "Failed to delete file" });
     }
   });
 
@@ -347,8 +465,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send endpoint (Final Save)
   app.post("/api/send", async (req, res) => {
     try {
-      const { tempFileName, filters } = sendRequestSchema.parse(req.body);
+      const { tempFileName, filters, messageContent } = sendRequestSchema.parse(req.body);
       const tempPath = path.join(TEMP_DIR, tempFileName);
+
+      // Save message content if provided
+      if (messageContent) {
+        const messagePath = path.join(FINAL_DIR, "message.txt");
+        await writeFile(messagePath, messageContent, "utf-8");
+      }
 
       if (!existsSync(tempPath)) {
         return res.status(404).json({ error: "Temporary file not found or expired" });
@@ -384,6 +508,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save to final destination
       XLSX.writeFile(newWorkbook, FINAL_FILE_PATH);
+
+      // Send to WhatsApp API
+      const phoneIdx = headers.indexOf("هاتف العميل");
+      if (phoneIdx !== -1 && messageContent) {
+        console.log("Starting WhatsApp broadcast...");
+        let successCount = 0;
+        let failCount = 0;
+        let lastErrorStatus = 0;
+        let hasNetworkError = false;
+
+        // We use a loop to send messages sequentially to avoid overwhelming the local API
+        for (const row of filteredRows) {
+          const phone = String(row[phoneIdx] || "").trim();
+
+          // Basic validation: ensure phone is not empty
+          if (phone) {
+            try {
+              console.log(`Sending message to ${phone}...`);
+
+              const token = "YOUR_TOKEN_HERE"; // User to replace this
+              if (token === "YOUR_TOKEN_HERE") {
+                console.warn("Warning: Using placeholder token. API calls will likely fail.");
+              }
+
+              const response = await fetch("http://167.172.24.203:5001/wp/send?cid=default_client_id1", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  phone: phone,
+                  message: messageContent,
+                }),
+              });
+
+              if (response.ok) {
+                successCount++;
+              } else {
+                console.error(`Failed to send to ${phone}: ${response.status} ${response.statusText}`);
+                failCount++;
+                lastErrorStatus = response.status;
+              }
+            } catch (error) {
+              console.error(`Error sending to ${phone}:`, error);
+              failCount++;
+              hasNetworkError = true;
+            }
+          }
+        }
+        console.log(`Broadcast complete. Success: ${successCount}, Failed: ${failCount}`);
+
+        if (failCount > 0) {
+          if (hasNetworkError && lastErrorStatus === 0) {
+            return res.status(502).json({ error: "حدث خطا ف الارسال الرجاء التحقق من الاتصال بالهاتف" });
+          }
+
+          switch (lastErrorStatus) {
+            case 401:
+              return res.status(502).json({ error: "حدث خطا ف الارسال الرجاء التاكد من النظام" });
+            case 403:
+              return res.status(502).json({ error: "غير مصرح لك بإرسال الرسائل، يرجى التحقق من الصلاحيات" });
+            case 404:
+              return res.status(502).json({ error: "الخدمة غير متوفرة حالياً" });
+            case 429:
+              return res.status(429).json({ error: "تم تجاوز حد الإرسال، يرجى المحاولة لاحقاً" });
+            case 500:
+              return res.status(502).json({ error: "خطأ في خادم الرسائل" });
+            default:
+              return res.status(502).json({ error: "حدث خطا ف الارسال الرجاء التاكد من النظام" });
+          }
+        }
+      }
 
       res.json({ success: true, message: "File processed and saved successfully" });
 

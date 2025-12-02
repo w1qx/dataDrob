@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileUploadZone } from "@/components/file-upload-zone";
 import { FileInfoCard } from "@/components/file-info-card";
 import { DataPreviewTable } from "@/components/data-preview-table";
@@ -7,6 +7,7 @@ import { FilterBar } from "@/components/filter-bar";
 import { FileData } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { FileSpreadsheet, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,7 +22,24 @@ export default function Home() {
     dateRange: { from?: Date; to?: Date } | undefined;
   }>({ neighborhoods: [], statuses: [], dateRange: undefined });
   const [isSending, setIsSending] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
   const { toast } = useToast();
+
+  // Fetch current file on mount
+  useEffect(() => {
+    const fetchCurrentFile = async () => {
+      try {
+        const response = await fetch("/api/current-file");
+        if (response.ok) {
+          const data = await response.json();
+          setFileData(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch current file:", error);
+      }
+    };
+    fetchCurrentFile();
+  }, []);
 
   const handleFileUpload = (data: FileData) => {
     setFileData(data);
@@ -31,11 +49,21 @@ export default function Home() {
     setIsUploading(false);
   };
 
-  const handleRemoveFile = () => {
-    setFileData(null);
-    setFilteredRows(null);
-    setFilteredTotal(null);
-    setCurrentFilters({ neighborhoods: [], statuses: [], dateRange: undefined });
+  const handleRemoveFile = async () => {
+    try {
+      await apiRequest("DELETE", "/api/current-file");
+      setFileData(null);
+      setFilteredRows(null);
+      setFilteredTotal(null);
+      setCurrentFilters({ neighborhoods: [], statuses: [], dateRange: undefined });
+    } catch (error) {
+      console.error("Failed to remove file:", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل في حذف الملف",
+      });
+    }
   };
 
   const handleFilterChange = async (filters: {
@@ -86,7 +114,8 @@ export default function Home() {
             from: currentFilters.dateRange.from?.toISOString(),
             to: currentFilters.dateRange.to?.toISOString()
           } : undefined
-        }
+        },
+        messageContent
       });
 
       toast({
@@ -100,7 +129,7 @@ export default function Home() {
       toast({
         variant: "destructive",
         title: "فشل الارسال",
-        description: "حدث خطأ أثناء ارسال الملف",
+        description: error instanceof Error ? error.message : "حدث خطا ف الارسال الرجاء التحقق من الاتصال بالهاتف",
       });
     } finally {
       setIsSending(false);
@@ -174,6 +203,38 @@ export default function Home() {
                           }}
                         />
                       )}
+                    </div>
+                  </div>
+
+                  <div className="glass-panel rounded-2xl p-6 shadow-sm space-y-4">
+                    <div className="flex flex-col gap-2">
+                      <h3 className="text-lg font-bold text-primary">نوع الرسالة</h3>
+                      <div className="flex gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => setMessageContent("عرض خاص! احصل على خصم 20% على جميع خدمات تحلية المياه لفترة محدودة. اتصل بنا الآن!")}
+                          className="flex-1 border-primary/20 hover:bg-primary/5 hover:text-primary hover:border-primary transition-all duration-300"
+                        >
+                          ترويج
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setMessageContent("نود تذكيركم بموعد الصيانة الدورية لجهاز التحلية الخاص بكم. يرجى التواصل معنا لتحديد موعد مناسب.")}
+                          className="flex-1 border-primary/20 hover:bg-primary/5 hover:text-primary hover:border-primary transition-all duration-300"
+                        >
+                          صيانة
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">نص الرسالة</label>
+                      <Textarea
+                        placeholder="اكتب نص الرسالة هنا..."
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                        className="min-h-[120px] bg-white/50 dark:bg-slate-900/50 border-gray-200 dark:border-gray-700 focus:border-primary resize-none"
+                      />
                     </div>
                   </div>
 

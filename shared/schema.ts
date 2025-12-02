@@ -35,6 +35,7 @@ export const sendRequestSchema = z.object({
       to: z.string().optional(),
     }).optional(),
   }),
+  messageContent: z.string().optional(),
 });
 
 export type FilterRequest = z.infer<typeof filterRequestSchema>;

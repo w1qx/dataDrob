@@ -24,7 +24,7 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
 
       <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm overflow-hidden border-0 shadow-lg rounded-2xl">
         <ScrollArea className="w-full h-[600px] rounded-2xl">
-          <div className="min-w-full">
+          <div className="min-w-[800px]">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-[#6AC1E8] shadow-sm border-b border-[#5AB1D8]">
                 <TableRow className="hover:bg-transparent border-none">
@@ -33,7 +33,7 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
                     <TableHead
                       key={index}
                       className={`
-                        text-white font-bold text-right whitespace-nowrap px-6 py-4
+                        text-white font-bold text-right whitespace-nowrap px-4 py-3 md:px-6 md:py-4
                         ${index === fileData.headers.length - 1 ? 'last:rounded-tl-xl' : ''}
                       `}
                     >
@@ -54,7 +54,7 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
                     {row.map((cell: any, cellIndex: number) => (
                       <TableCell
                         key={cellIndex}
-                        className="text-right whitespace-nowrap px-6 py-3 text-gray-700 dark:text-gray-300"
+                        className="text-right whitespace-nowrap px-4 py-3 md:px-6 md:py-3 text-gray-700 dark:text-gray-300"
                       >
                         {cell}
                       </TableCell>

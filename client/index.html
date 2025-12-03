@@ -13,7 +13,67 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body>
+<body style="background-color: #020617; margin: 0; overflow: hidden;">
+  <!-- Immediate Loading Screen -->
+  <div id="initial-loader"
+    style="position: fixed; inset: 0; z-index: 99999; background-color: #020617; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.7s ease-out;">
+    <div style="width: 256px; text-align: center;">
+      <img src="/logo.png" alt="Logo"
+        style="height: 80px; width: auto; margin: 0 auto 16px; display: block; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;" />
+      <div
+        style="height: 8px; width: 100%; background-color: #1e293b; border-radius: 9999px; overflow: hidden; margin-bottom: 8px;">
+        <div id="loader-progress"
+          style="height: 100%; width: 0%; background: linear-gradient(to right, #06b6d4, #2563eb); transition: width 0.1s linear;">
+        </div>
+      </div>
+      <p id="loader-text"
+        style="font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: #94a3b8; margin: 0;">جاري
+        تحميل الموارد... 0%</p>
+    </div>
+  </div>
+
+  <style>
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+  </style>
+
+  <script>
+    (function () {
+      var progress = 0;
+      var bar = document.getElementById('loader-progress');
+      var text = document.getElementById('loader-text');
+      var loader = document.getElementById('initial-loader');
+
+      var interval = setInterval(function () {
+        progress += 2;
+        if (progress > 100) progress = 100;
+
+        bar.style.width = progress + '%';
+        text.innerText = 'جاري تحميل الموارد... ' + progress + '%';
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(function () {
+            loader.style.opacity = '0';
+            setTimeout(function () {
+              loader.remove();
+              document.body.style.overflow = ''; // Restore scrolling
+            }, 700);
+          }, 500);
+        }
+      }, 20); // 20ms * 50 steps = 1000ms total duration
+    })();
+  </script>
+
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

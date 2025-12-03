@@ -39,7 +39,7 @@ function FloatingShape({ position = [0, 0, 0], color = "#6AC1E8", speed = 1, rot
 
 export const Scene3D = memo(function Scene3D() {
     return (
-        <div className="fixed inset-0 -z-10 bg-slate-50 dark:bg-slate-950 pointer-events-none">
+        <div className="fixed inset-0 -z-10 bg-slate-950 pointer-events-none">
             <Canvas camera={{ position: [0, 0, 10] }} dpr={[1, 1.5]}>
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} />

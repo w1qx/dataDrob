@@ -145,6 +145,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative">
+
       <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 font-['Cairo'] relative overflow-hidden">
         <Scene3D />
 

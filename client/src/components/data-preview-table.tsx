@@ -23,7 +23,7 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
       </div>
 
       <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm overflow-hidden border-0 shadow-lg rounded-2xl">
-        <ScrollArea className="w-full h-[600px] rounded-2xl">
+        <ScrollArea className="w-full h-[600px] rounded-2xl" dir="rtl">
           <div className="min-w-[800px]">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-[#6AC1E8] shadow-sm border-b border-[#5AB1D8]">

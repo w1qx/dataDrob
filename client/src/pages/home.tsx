@@ -148,7 +148,7 @@ export default function Home() {
       <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 font-['Cairo'] relative overflow-hidden">
         <Scene3D />
 
-        <div className="w-full max-w-6xl glass-card rounded-3xl p-6 md:p-10 animate-in fade-in zoom-in duration-500">
+        <div className="relative z-10 w-full max-w-6xl glass-card rounded-3xl p-6 md:p-10 animate-in fade-in zoom-in duration-500">
           <div className="flex flex-col gap-8">
 
             {/* Header */}
@@ -262,8 +262,25 @@ export default function Home() {
               )}
             </div>
           </div>
+          <footer className="mt-12 pt-8 border-t border-gray-100/20">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              {/* Logo and Company Name (Right side in RTL) */}
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="Logo" className="h-10 w-auto opacity-90" />
+                <span className="font-bold text-gray-700 dark:text-gray-200">مؤسسة باداود لتحلية المياه</span>
+              </div>
+
+              {/* Copyright and Credits (Left side in RTL) */}
+              <div className="flex flex-col items-center md:items-end gap-1 text-sm text-muted-foreground/80">
+                <p>© {new Date().getFullYear()} كل الحقوق محفوظة</p>
+                <p className="text-xs">
+                  تم التطوير بواسطة <span className="text-primary font-bold">وليد الغامدي</span>
+                </p>
+              </div>
+            </div>
+          </footer>
         </div>
       </div>
-    </div >
+    </div>
   );
 }

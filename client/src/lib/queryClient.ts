@@ -13,12 +13,20 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   const isFormData = data instanceof FormData;
-  
+  const token = localStorage.getItem("auth_token");
+
+  const headers: Record<string, string> = {};
+  if (data && !isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (token) {
+    headers["Authorization"] = token;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: (data && !isFormData) ? { "Content-Type": "application/json" } : {},
+    headers,
     body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
-    credentials: "include",
   });
 
   await throwIfResNotOk(res);
@@ -30,18 +38,19 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-    });
+    async ({ queryKey }) => {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(queryKey.join("/") as string, {
+        headers: token ? { "Authorization": token } : {},
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
 
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
+      await throwIfResNotOk(res);
+      return await res.json();
+    };
 
 export const queryClient = new QueryClient({
   defaultOptions: {

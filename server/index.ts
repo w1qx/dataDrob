@@ -17,6 +17,25 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+import session from "express-session";
+import MemoryStore from "memorystore";
+const SessionStore = MemoryStore(session);
+
+app.set("trust proxy", 1); // Trust first proxy
+app.use(session({
+  secret: process.env.SESSION_SECRET || "dev_secret",
+  resave: true,
+  saveUninitialized: true,
+  store: new SessionStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  }),
+  cookie: {
+    secure: false, // Allow HTTP
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

@@ -23,7 +23,80 @@ const FINAL_DIR = path.join(UPLOADS_DIR, "final");
 const FINAL_FILE_PATH = path.join(FINAL_DIR, "customers.xls");
 const CURRENT_METADATA_PATH = path.join(UPLOADS_DIR, "current_metadata.json");
 
+import { randomUUID } from "crypto";
+
+// Simple in-memory session store
+const SESSIONS = new Set<string>();
+
+// Middleware to check if user is authenticated via Token
+const requireAuth = (req: any, res: any, next: any) => {
+  const token = req.headers.authorization;
+  if (token && SESSIONS.has(token)) {
+    next();
+  } else {
+    res.status(401).json({ error: "Unauthorized" });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth Routes
+  app.post("/api/login", (req, res) => {
+    console.log("Login Request Body:", req.body);
+    console.log("Content-Type:", req.headers["content-type"]);
+
+    const { username, password } = req.body;
+
+    // Hardcoded fallback for debugging
+    const validUser = "raif";
+    const validPass = "raif77";
+
+    const inputUser = (username || "").trim().toLowerCase();
+    const inputPass = (password || "").trim(); // Password case sensitive usually, but let's check
+
+    console.log("Comparison:", {
+      inputUser,
+      validUser,
+      matchUser: inputUser === validUser,
+      matchPass: inputPass === "Raif77" // Check against the specific password user was given
+    });
+
+    // Allow "Raif" or "raif", and "Raif77"
+    if (inputUser === validUser && inputPass === "Raif77") {
+      const token = randomUUID();
+      SESSIONS.add(token);
+      res.json({ success: true, token });
+    } else {
+      res.status(401).json({
+        error: "Invalid credentials",
+        debug: {
+          receivedUser: inputUser,
+          receivedPass: inputPass,
+          expectedUser: validUser,
+          expectedPass: "Raif77",
+          matchUser: inputUser === validUser,
+          matchPass: inputPass === "Raif77"
+        }
+      });
+    }
+  });
+
+  app.post("/api/logout", (req, res) => {
+    const token = req.headers.authorization;
+    if (token) {
+      SESSIONS.delete(token);
+    }
+    res.json({ success: true });
+  });
+
+  app.get("/api/check-auth", (req, res) => {
+    res.header("Cache-Control", "no-store");
+    const token = req.headers.authorization;
+    if (token && SESSIONS.has(token)) {
+      res.json({ authenticated: true, user: { username: process.env.ADMIN_USERNAME } });
+    } else {
+      res.json({ authenticated: false });
+    }
+  });
   // Ensure directories exist
   await mkdir(TEMP_DIR, { recursive: true });
   await mkdir(FINAL_DIR, { recursive: true });
@@ -163,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // File upload endpoint
-  app.post("/api/upload", upload.single("file"), async (req, res) => {
+  app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
     let filePath: string | undefined;
 
     try {
@@ -299,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get current file endpoint (Persistence)
-  app.get("/api/current-file", async (req, res) => {
+  app.get("/api/current-file", requireAuth, async (req, res) => {
     try {
       if (!existsSync(CURRENT_METADATA_PATH)) {
         return res.status(404).json({ error: "No active file" });
@@ -387,7 +460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete current file endpoint
-  app.delete("/api/current-file", async (req, res) => {
+  app.delete("/api/current-file", requireAuth, async (req, res) => {
     try {
       if (existsSync(CURRENT_METADATA_PATH)) {
         const metadata = JSON.parse(await readFile(CURRENT_METADATA_PATH, "utf-8"));
@@ -410,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Filter endpoint (Preview)
-  app.post("/api/filter", async (req, res) => {
+  app.post("/api/filter", requireAuth, async (req, res) => {
     try {
       const { neighborhoods, statuses, dateRange, filePath } = filterRequestSchema.parse(req.body);
 
@@ -463,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send endpoint (Final Save)
-  app.post("/api/send", async (req, res) => {
+  app.post("/api/send", requireAuth, async (req, res) => {
     try {
       const { tempFileName, filters, messageContent } = sendRequestSchema.parse(req.body);
       const tempPath = path.join(TEMP_DIR, tempFileName);

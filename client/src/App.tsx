@@ -6,10 +6,38 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 
+import Login from "@/pages/login";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { data: auth, isLoading } = useQuery({
+    queryKey: ["/api/check-auth"],
+    retry: false,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!auth?.authenticated) {
+    return <Login />;
+  }
+
+  return <Component />;
+}
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
+      <Route path="/">
+        <ProtectedRoute component={Home} />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

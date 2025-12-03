@@ -29,7 +29,7 @@ export default function Home() {
   useEffect(() => {
     const fetchCurrentFile = async () => {
       try {
-        const response = await fetch("/api/current-file");
+        const response = await apiRequest("GET", "/api/current-file");
         if (response.ok) {
           const data = await response.json();
           setFileData(data);

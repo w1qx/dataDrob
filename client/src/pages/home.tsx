@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { FileUploadZone } from "@/components/file-upload-zone";
 import { FileInfoCard } from "@/components/file-info-card";
 import { DataPreviewTable } from "@/components/data-preview-table";
-import { AnimatedGradient } from "@/components/animated-gradient";
+import { Scene3D } from "@/components/scene-3d";
 import { FilterBar } from "@/components/filter-bar";
 import { FileData } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -146,7 +146,7 @@ export default function Home() {
   return (
     <div className="min-h-screen relative">
       <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 font-['Cairo'] relative overflow-hidden">
-        <AnimatedGradient />
+        <Scene3D />
 
         <div className="w-full max-w-6xl glass-card rounded-3xl p-6 md:p-10 animate-in fade-in zoom-in duration-500">
           <div className="flex flex-col gap-8">

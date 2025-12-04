@@ -147,8 +147,6 @@ export default function Home() {
     <div className="min-h-screen relative">
 
       <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 font-['Cairo'] relative overflow-hidden">
-        <Scene3D />
-
         <div className="relative z-10 w-full max-w-6xl glass-card rounded-3xl p-6 md:p-10 animate-in fade-in zoom-in duration-500">
           <div className="flex flex-col gap-8">
 

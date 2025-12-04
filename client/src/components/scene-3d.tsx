@@ -1,6 +1,6 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, Stars, Edges } from "@react-three/drei";
-import { useRef, memo } from "react";
+import { useRef, memo, useState, useEffect } from "react";
 import * as THREE from "three";
 
 interface FloatingShapeProps {
@@ -38,22 +38,59 @@ function FloatingShape({ position = [0, 0, 0], color = "#6AC1E8", speed = 1, rot
 }
 
 export const Scene3D = memo(function Scene3D() {
+    const [mounted, setMounted] = useState(false);
+    const [ready, setReady] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setMounted(true), 500);
+
+        const handleBeforeUnload = () => {
+            if (containerRef.current) {
+                containerRef.current.style.opacity = '0';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
+
     return (
-        <div className="fixed inset-0 -z-10 bg-slate-950 pointer-events-none">
-            <Canvas camera={{ position: [0, 0, 10] }} dpr={[1, 1.5]}>
-                <ambientLight intensity={0.5} />
-                <pointLight position={[10, 10, 10]} />
-                <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade speed={1} />
+        <div className="fixed inset-0 z-0 bg-slate-950 pointer-events-none" style={{ backgroundColor: '#020617' }}>
+            {mounted && (
+                <div ref={containerRef} className={`w-full h-full transition-opacity duration-1000 ${ready ? 'opacity-100' : 'opacity-0'}`}>
+                    <Canvas
+                        camera={{ position: [0, 0, 10] }}
+                        dpr={[1, 1.5]}
+                        gl={{ alpha: false, antialias: true }}
+                        onCreated={({ gl }) => {
+                            gl.setClearColor('#020617');
+                            gl.clear();
+                            // Small delay to ensure first frame is painted
+                            requestAnimationFrame(() => {
+                                setReady(true);
+                            });
+                        }}
+                    >
+                        <color attach="background" args={['#020617']} />
+                        <ambientLight intensity={0.5} />
+                        <pointLight position={[10, 10, 10]} />
 
-                {/* Left side shape */}
-                <FloatingShape position={[-9, 2, 0]} color="#6AC1E8" speed={1.5} rotationSpeed={1} scale={2} />
+                        {/* Left side shape */}
+                        <FloatingShape position={[-9, 2, 0]} color="#6AC1E8" speed={1.5} rotationSpeed={1} scale={2} />
 
-                {/* Right side shape (upper) */}
-                <FloatingShape position={[9, 3, -2]} color="#6AC1E8" speed={2} rotationSpeed={1.5} scale={1.5} />
+                        {/* Right side shape (upper) */}
+                        <FloatingShape position={[9, 3, -2]} color="#6AC1E8" speed={2} rotationSpeed={1.5} scale={1.5} />
 
-                {/* Right side shape (lower) */}
-                <FloatingShape position={[10, -3, 0]} color="#3B82F6" speed={1} rotationSpeed={0.8} scale={2.2} />
-            </Canvas>
+                        {/* Right side shape (lower) */}
+                        <FloatingShape position={[10, -3, 0]} color="#3B82F6" speed={1} rotationSpeed={0.8} scale={2.2} />
+                    </Canvas>
+                </div>
+            )}
         </div>
     );
 });

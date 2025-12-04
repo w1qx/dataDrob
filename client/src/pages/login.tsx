@@ -32,8 +32,12 @@ export default function Login() {
                 title: "تم تسجيل الدخول بنجاح",
                 description: "مرحباً بك مرة أخرى",
             });
-            // Force full reload to ensure auth state is picked up
-            window.location.href = "/";
+
+            // Invalidate auth query to update ProtectedRoute state
+            await queryClient.invalidateQueries({ queryKey: ["/api/check-auth"] });
+
+            // Client-side navigation to avoid page reload and white flash
+            setLocation("/");
         } catch (error) {
             const message = error instanceof Error ? error.message : "Unknown error";
             toast({
@@ -47,9 +51,7 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-4 font-['Cairo'] relative overflow-hidden">
-            <Scene3D />
-
+        <div className="min-h-screen w-full flex items-center justify-center p-4 font-['Cairo'] relative z-10 overflow-hidden">
             <Card className="w-full max-w-md glass-card border-0 shadow-2xl">
                 <CardHeader className="space-y-1 text-center pb-8">
                     <div className="flex justify-center mb-4">

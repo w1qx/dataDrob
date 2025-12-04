@@ -85,11 +85,14 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
 import { ThemeProvider } from "@/components/theme-provider";
 
+import { BackgroundShapes } from "@/components/background-shapes";
+
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" attribute="class">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+          <BackgroundShapes />
           <Toaster />
           <ErrorBoundary>
             <Router />

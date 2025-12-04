@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="dark">
 
 <head>
   <meta charset="UTF-8" />
@@ -11,6 +11,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#020617" />
+  <style>
+    html,
+    body {
+      background-color: #020617 !important;
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json" />
 </head>
 
 <body style="background-color: #020617; margin: 0; overflow: hidden;">
@@ -70,7 +78,7 @@
             }, 700);
           }, 500);
         }
-      }, 20); // 20ms * 50 steps = 1000ms total duration
+      }, 20); // 20ms * 100 steps = 2000ms total duration
     })();
   </script>
 

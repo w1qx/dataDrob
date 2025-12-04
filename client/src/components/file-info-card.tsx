@@ -36,15 +36,15 @@ export function FileInfoCard({ fileData, onRemove }: FileInfoCardProps) {
         {/* File Info */}
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-start gap-3 flex-wrap">
-            <h3 className="text-lg font-semibold text-foreground truncate" data-testid="text-filename">
+            <h3 className="text-lg font-semibold text-foreground truncate cursor-default select-none" data-testid="text-filename">
               {fileData.fileName}
             </h3>
-            <Badge variant="secondary" data-testid="badge-filetype">
+            <Badge variant="secondary" data-testid="badge-filetype" className="cursor-default select-none">
               {getFileTypeLabel(fileData.fileType)}
             </Badge>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground cursor-default select-none">
             <span data-testid="text-filesize">{formatFileSize(fileData.fileSize)}</span>
             <span className="text-border">•</span>
             <span data-testid="text-rowcount">{fileData.totalRows.toLocaleString()} صف</span>

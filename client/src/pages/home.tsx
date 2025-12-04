@@ -161,10 +161,10 @@ export default function Home() {
                 />
               </div>
               <div className="space-y-1">
-                <h1 className="text-4xl font-bold text-gradient tracking-tight">
+                <h1 className="text-4xl font-bold text-gradient tracking-tight cursor-default select-none">
                   مؤسسة باداود لتحلية المياه
                 </h1>
-                <p className="text-muted-foreground font-medium text-lg">
+                <p className="text-muted-foreground font-medium text-lg cursor-default select-none">
                   خدمات تحلية مياه عالية الجودة
                 </p>
               </div>
@@ -207,7 +207,7 @@ export default function Home() {
 
                   <div className="glass-panel rounded-2xl p-6 shadow-sm space-y-4">
                     <div className="flex flex-col gap-2">
-                      <h3 className="text-lg font-bold text-primary">نوع الرسالة</h3>
+                      <h3 className="text-lg font-bold text-primary cursor-default select-none">نوع الرسالة</h3>
                       <div className="flex gap-3">
                         <Button
                           variant="outline"
@@ -227,7 +227,7 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">نص الرسالة</label>
+                      <label className="text-sm font-medium text-muted-foreground cursor-default select-none">نص الرسالة</label>
                       <Textarea
                         placeholder="اكتب نص الرسالة هنا..."
                         value={messageContent}
@@ -266,11 +266,11 @@ export default function Home() {
               {/* Logo and Company Name (Right side in RTL) */}
               <div className="flex items-center gap-3">
                 <img src="/logo.png" alt="Logo" className="h-10 w-auto opacity-90" />
-                <span className="font-bold text-gray-700 dark:text-gray-200">مؤسسة باداود لتحلية المياه</span>
+                <span className="font-bold text-gray-700 dark:text-gray-200 cursor-default select-none">مؤسسة باداود لتحلية المياه</span>
               </div>
 
               {/* Copyright and Credits (Left side in RTL) */}
-              <div className="flex flex-col items-center md:items-end gap-1 text-sm text-muted-foreground/80">
+              <div className="flex flex-col items-center md:items-end gap-1 text-sm text-muted-foreground/80 cursor-default select-none">
                 <p>© {new Date().getFullYear()} كل الحقوق محفوظة</p>
                 <p className="text-xs">
                   تم التطوير بواسطة <span className="text-primary font-bold">وليد الغامدي</span>

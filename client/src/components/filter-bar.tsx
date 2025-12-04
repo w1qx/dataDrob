@@ -75,7 +75,7 @@ export function FilterBar({
                     <div className="p-2 bg-primary/10 rounded-full">
                         <Filter className="h-5 w-5" />
                     </div>
-                    <span className="font-bold text-lg">تصفية البيانات</span>
+                    <span className="font-bold text-lg cursor-default select-none">تصفية البيانات</span>
                 </div>
 
                 {(selectedNeighborhoods.length > 0 || selectedStatuses.length > 0 || dateRange) && (
@@ -215,13 +215,13 @@ export function FilterBar({
                         <div className="flex flex-col gap-4">
                             <div className="flex gap-3 bg-gray-50 dark:bg-slate-800 p-3 rounded-xl">
                                 <div className="flex flex-col gap-1.5 flex-1">
-                                    <span className="text-xs font-bold text-primary">من</span>
+                                    <span className="text-xs font-bold text-primary cursor-default select-none">من</span>
                                     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm font-medium shadow-sm flex items-center justify-center h-10 text-foreground">
                                         {dateRange?.from ? format(dateRange.from, "dd/MM/yyyy") : "-"}
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-1.5 flex-1">
-                                    <span className="text-xs font-bold text-primary">إلى</span>
+                                    <span className="text-xs font-bold text-primary cursor-default select-none">إلى</span>
                                     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm font-medium shadow-sm flex items-center justify-center h-10 text-foreground">
                                         {dateRange?.to ? format(dateRange.to, "dd/MM/yyyy") : "-"}
                                     </div>

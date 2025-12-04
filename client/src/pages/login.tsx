@@ -57,17 +57,17 @@ export default function Login() {
                     <div className="flex justify-center mb-4">
                         <img src="/logo.png" alt="Logo" className="h-20 w-auto object-contain drop-shadow-md" />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-gray-800 dark:text-white">
+                    <CardTitle className="text-2xl font-bold text-gray-800 dark:text-white cursor-default select-none">
                         تسجيل الدخول
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground cursor-default select-none">
                         الرجاء إدخال بيانات الدخول للمتابعة
                     </p>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-default select-none">
                                 اسم المستخدم
                             </label>
                             <Input
@@ -80,7 +80,7 @@ export default function Login() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-default select-none">
                                 كلمة المرور
                             </label>
                             <Input

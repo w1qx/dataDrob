@@ -120,10 +120,10 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
   return (
     <div className="space-y-8 font-['Cairo']">
       <div className="text-center space-y-2">
-        <h2 className="text-4xl font-semibold text-foreground">
+        <h2 className="text-4xl font-semibold text-foreground cursor-default select-none">
           اسحب الملف هنا
         </h2>
-        <p className="text-base text-muted-foreground">
+        <p className="text-base text-muted-foreground cursor-default select-none">
           قم برفع الملفات لمعاينة بياناتك
         </p>
       </div>
@@ -187,10 +187,10 @@ export function FileUploadZone({ onUpload, isUploading, setIsUploading }: FileUp
           </div>
 
           <div className="space-y-4 relative z-10">
-            <h3 className="text-3xl font-bold text-gray-800 dark:text-gray-100 group-hover:text-primary transition-colors duration-300 tracking-tight">
+            <h3 className="text-3xl font-bold text-gray-800 dark:text-gray-100 group-hover:text-primary transition-colors duration-300 tracking-tight cursor-default select-none">
               {isDragging ? "ضع الملف هنا" : "سحب  ملف "}
             </h3>
-            <p className="text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed font-medium">
+            <p className="text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed font-medium cursor-default select-none">
               قم بسحب الملف هنا، أو انقر لاختيار ملف من جهازك
             </p>
           </div>

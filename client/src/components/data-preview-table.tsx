@@ -14,10 +14,10 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
   return (
     <div className="space-y-4 font-['Cairo']">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-foreground">
+        <h2 className="text-2xl font-semibold text-foreground cursor-default select-none">
           معاينة البيانات
         </h2>
-        <p className="text-sm text-muted-foreground" data-testid="text-preview-info">
+        <p className="text-sm text-muted-foreground cursor-default select-none" data-testid="text-preview-info">
           عرض {fileData.totalRows.toLocaleString()} صفوف
         </p>
       </div>
@@ -28,12 +28,12 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-[#6AC1E8] shadow-sm border-b border-[#5AB1D8]">
                 <TableRow className="hover:bg-transparent border-none">
-                  <TableHead className="w-[50px] text-white font-bold text-center first:rounded-tr-xl">#</TableHead>
+                  <TableHead className="w-[50px] text-white font-bold text-center first:rounded-tr-xl cursor-default select-none">#</TableHead>
                   {fileData.headers.map((header, index) => (
                     <TableHead
                       key={index}
                       className={`
-                        text-white font-bold text-right whitespace-nowrap px-4 py-3 md:px-6 md:py-4
+                        text-white font-bold text-right whitespace-nowrap px-4 py-3 md:px-6 md:py-4 cursor-default select-none
                         ${index === fileData.headers.length - 1 ? 'last:rounded-tl-xl' : ''}
                       `}
                     >
@@ -48,13 +48,13 @@ export function DataPreviewTable({ fileData }: DataPreviewTableProps) {
                     key={rowIndex}
                     className="hover:bg-cyan-50/50 dark:hover:bg-cyan-900/20 transition-colors duration-200 border-b border-gray-100 dark:border-gray-800 last:border-0 odd:bg-white even:bg-slate-50/50 dark:odd:bg-slate-900 dark:even:bg-slate-800/50"
                   >
-                    <TableCell className="font-medium text-center text-muted-foreground bg-gray-50/50 dark:bg-slate-800/50">
+                    <TableCell className="font-medium text-center text-muted-foreground bg-gray-50/50 dark:bg-slate-800/50 cursor-default select-none">
                       {rowIndex + 1}
                     </TableCell>
                     {row.map((cell: any, cellIndex: number) => (
                       <TableCell
                         key={cellIndex}
-                        className="text-right whitespace-nowrap px-4 py-3 md:px-6 md:py-3 text-gray-700 dark:text-gray-300"
+                        className="text-right whitespace-nowrap px-4 py-3 md:px-6 md:py-3 text-gray-700 dark:text-gray-300 cursor-default select-none"
                       >
                         {cell}
                       </TableCell>

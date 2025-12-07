@@ -223,7 +223,7 @@ export function FilterBar({
                                 <div className="flex flex-col gap-1.5 flex-1">
                                     <span className="text-xs font-bold text-primary cursor-default select-none">إلى</span>
                                     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm font-medium shadow-sm flex items-center justify-center h-10 text-foreground">
-                                        {dateRange?.to ? format(dateRange.to, "dd/MM/yyyy") : "-"}
+                                        {dateRange?.to ? format(dateRange.to, "dd/MM/yyyy") : (dateRange?.from ? format(dateRange.from, "dd/MM/yyyy") : "-")}
                                     </div>
                                 </div>
                             </div>

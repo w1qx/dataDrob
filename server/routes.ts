@@ -208,12 +208,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const fromDate = new Date(filters.dateRange.from);
             fromDate.setHours(0, 0, 0, 0);
             if (parsedDate < fromDate) return false;
-
-            // If 'to' is missing, treat it as a single day range (to = from)
-            const toDate = filters.dateRange.to ? new Date(filters.dateRange.to) : new Date(filters.dateRange.from);
-            toDate.setHours(0, 0, 0, 0);
-            if (parsedDate > toDate) return false;
           }
+          // If 'to' date is missing, default to 'from' date (Single day selection)
+          const toDate = filters.dateRange.to ? new Date(filters.dateRange.to) : new Date(filters.dateRange.from);
+          toDate.setHours(0, 0, 0, 0);
+
+          if (parsedDate > toDate) return false;
         }
       }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { FileUploadZone } from "@/components/file-upload-zone";
 import { FileInfoCard } from "@/components/file-info-card";
 import { DataPreviewTable } from "@/components/data-preview-table";
@@ -87,8 +88,8 @@ export default function Home() {
         neighborhoods: filters.neighborhoods,
         statuses: filters.statuses,
         dateRange: filters.dateRange ? {
-          from: filters.dateRange.from?.toISOString(),
-          to: filters.dateRange.to?.toISOString()
+          from: filters.dateRange.from ? format(filters.dateRange.from, 'yyyy-MM-dd') : undefined,
+          to: filters.dateRange.to ? format(filters.dateRange.to, 'yyyy-MM-dd') : undefined
         } : undefined
       });
 
@@ -111,8 +112,8 @@ export default function Home() {
           neighborhoods: currentFilters.neighborhoods,
           statuses: currentFilters.statuses,
           dateRange: currentFilters.dateRange ? {
-            from: currentFilters.dateRange.from?.toISOString(),
-            to: currentFilters.dateRange.to?.toISOString()
+            from: currentFilters.dateRange.from ? format(currentFilters.dateRange.from, 'yyyy-MM-dd') : undefined,
+            to: currentFilters.dateRange.to ? format(currentFilters.dateRange.to, 'yyyy-MM-dd') : undefined
           } : undefined
         },
         messageContent

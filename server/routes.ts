@@ -205,13 +205,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           parsedDate.setHours(0, 0, 0, 0);
 
           if (filters.dateRange.from) {
-            const fromDate = new Date(filters.dateRange.from);
+            // Parse YYYY-MM-DD as local date
+            const [y, m, d] = filters.dateRange.from.split('-').map(Number);
+            const fromDate = new Date(y, m - 1, d);
             fromDate.setHours(0, 0, 0, 0);
             if (parsedDate < fromDate) return false;
           }
           if (filters.dateRange.to) {
-            const toDate = new Date(filters.dateRange.to);
+            // Parse YYYY-MM-DD as local date
+            const [y, m, d] = filters.dateRange.to.split('-').map(Number);
+            const toDate = new Date(y, m - 1, d);
             toDate.setHours(0, 0, 0, 0);
+            // For "to" date, we want to include the whole day, but since we compare against midnight-normalized parsedDate,
+            // strict equality or > is fine. If parsedDate is midnight, and toDate is midnight same day,
+            // parsedDate > toDate is false (so it's kept).
+            // If parsedDate is next day, parsedDate > toDate is true (excluded).
             if (parsedDate > toDate) return false;
           }
         }

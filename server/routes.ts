@@ -168,8 +168,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const neighborhoodIdx = headers.indexOf("عنوان العميل الكامل");
     const statusIdx = headers.indexOf("الحالة");
     const dateIdx = headers.indexOf("التاريخ");
+    console.log("Filter Debug:", {
+      headers,
+      dateIdx,
+      filters: JSON.stringify(filters)
+    });
 
-    return rows.filter(row => {
+    return rows.filter((row, index) => {
       // Filter by Neighborhood
       if (filters.neighborhoods && filters.neighborhoods.length > 0 && neighborhoodIdx !== -1) {
         const val = String(row[neighborhoodIdx] || "").trim();
@@ -199,6 +204,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const d2 = new Date(cellValue);
             if (isValid(d2)) parsedDate = d2;
           }
+        } else if (typeof cellValue === 'number') {
+          // Handle Excel serial number if it slips through
+          // (Excel base date is usually Dec 30 1899)
+          parsedDate = new Date(Math.round((cellValue - 25569) * 86400 * 1000));
+        }
+
+        if (index < 5) {
+          console.log(`Row ${index} Date Check:`, {
+            cellValue,
+            type: typeof cellValue,
+            parsedDate,
+            dateStr: parsedDate ? format(parsedDate, 'yyyy-MM-dd') : 'N/A',
+            filterFrom: filters.dateRange.from,
+            filterTo: filters.dateRange.to
+          });
         }
 
         if (parsedDate && isValid(parsedDate)) {

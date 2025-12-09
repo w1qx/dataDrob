@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
@@ -201,19 +202,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (parsedDate && isValid(parsedDate)) {
-          // Reset time part for comparison
-          parsedDate.setHours(0, 0, 0, 0);
+          // Format parsed date to YYYY-MM-DD string for comparison (Local time)
+          const dateStr = format(parsedDate, 'yyyy-MM-dd');
 
           if (filters.dateRange.from) {
-            const fromDate = new Date(filters.dateRange.from);
-            fromDate.setHours(0, 0, 0, 0);
-            if (parsedDate < fromDate) return false;
+            // Compare strings directly: "2026-02-10" < "2026-02-10" is false (good)
+            if (dateStr < filters.dateRange.from) return false;
           }
-          // If 'to' date is missing, default to 'from' date (Single day selection)
-          const toDate = filters.dateRange.to ? new Date(filters.dateRange.to) : new Date(filters.dateRange.from);
-          toDate.setHours(0, 0, 0, 0);
 
-          if (parsedDate > toDate) return false;
+          if (filters.dateRange.to) {
+            // If 'to' is missing, treat as single day (from date)
+            const toStr = filters.dateRange.to || filters.dateRange.from;
+            if (dateStr > toStr) return false;
+          } else if (filters.dateRange.from) {
+            // Fallback if only 'from' exists and 'to' logic above didn't catch it (though it should)
+            // If we have from but no to, we treat as single day
+            if (dateStr > filters.dateRange.from) return false;
+          }
         }
       }
 

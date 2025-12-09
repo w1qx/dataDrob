@@ -87,8 +87,8 @@ export default function Home() {
         neighborhoods: filters.neighborhoods,
         statuses: filters.statuses,
         dateRange: filters.dateRange ? {
-          from: filters.dateRange.from ? format(filters.dateRange.from, "yyyy-MM-dd") : undefined,
-          to: filters.dateRange.to ? format(filters.dateRange.to, "yyyy-MM-dd") : undefined
+          from: filters.dateRange.from?.toISOString(),
+          to: filters.dateRange.to?.toISOString()
         } : undefined
       });
 

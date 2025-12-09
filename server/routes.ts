@@ -1,4 +1,3 @@
-import { z } from "zod";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
@@ -168,13 +167,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const neighborhoodIdx = headers.indexOf("عنوان العميل الكامل");
     const statusIdx = headers.indexOf("الحالة");
     const dateIdx = headers.indexOf("التاريخ");
-    console.log("Filter Debug:", {
-      headers,
-      dateIdx,
-      filters: JSON.stringify(filters)
-    });
 
-    return rows.filter((row, index) => {
+    return rows.filter(row => {
       // Filter by Neighborhood
       if (filters.neighborhoods && filters.neighborhoods.length > 0 && neighborhoodIdx !== -1) {
         const val = String(row[neighborhoodIdx] || "").trim();
@@ -204,40 +198,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const d2 = new Date(cellValue);
             if (isValid(d2)) parsedDate = d2;
           }
-        } else if (typeof cellValue === 'number') {
-          // Handle Excel serial number if it slips through
-          // (Excel base date is usually Dec 30 1899)
-          parsedDate = new Date(Math.round((cellValue - 25569) * 86400 * 1000));
-        }
-
-        if (index < 5) {
-          console.log(`Row ${index} Date Check:`, {
-            cellValue,
-            type: typeof cellValue,
-            parsedDate,
-            dateStr: parsedDate ? format(parsedDate, 'yyyy-MM-dd') : 'N/A',
-            filterFrom: filters.dateRange.from,
-            filterTo: filters.dateRange.to
-          });
         }
 
         if (parsedDate && isValid(parsedDate)) {
-          // Format parsed date to YYYY-MM-DD string for comparison (Local time)
-          const dateStr = format(parsedDate, 'yyyy-MM-dd');
+          // Reset time part for comparison
+          parsedDate.setHours(0, 0, 0, 0);
 
           if (filters.dateRange.from) {
-            // Compare strings directly: "2026-02-10" < "2026-02-10" is false (good)
-            if (dateStr < filters.dateRange.from) return false;
+            const fromDate = new Date(filters.dateRange.from);
+            fromDate.setHours(0, 0, 0, 0);
+            if (parsedDate < fromDate) return false;
           }
-
           if (filters.dateRange.to) {
-            // If 'to' is missing, treat as single day (from date)
-            const toStr = filters.dateRange.to || filters.dateRange.from;
-            if (dateStr > toStr) return false;
-          } else if (filters.dateRange.from) {
-            // Fallback if only 'from' exists and 'to' logic above didn't catch it (though it should)
-            // If we have from but no to, we treat as single day
-            if (dateStr > filters.dateRange.from) return false;
+            const toDate = new Date(filters.dateRange.to);
+            toDate.setHours(0, 0, 0, 0);
+            if (parsedDate > toDate) return false;
           }
         }
       }

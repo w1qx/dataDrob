@@ -55,8 +55,8 @@ export function SendStatusSidebar() {
                     )}
                 </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px] border-r border-gray-200/50">
-                <SheetHeader className="text-right pb-4 border-b border-gray-100">
+            <SheetContent side="left" className="w-[300px] sm:w-[400px] border-r border-gray-200/50 flex flex-col h-full">
+                <SheetHeader className="text-right pb-4 border-b border-gray-100 flex-none">
                     <SheetTitle className="text-2xl font-bold bg-gradient-to-l from-primary to-blue-600 bg-clip-text text-transparent">
                         تقرير آخر إرسال
                     </SheetTitle>
@@ -79,9 +79,9 @@ export function SendStatusSidebar() {
                         <p>لا يوجد تقارير سابقة</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col h-full">
+                    <div className="flex flex-col flex-1 min-h-0">
                         {/* Stats Summary */}
-                        <div className="grid grid-cols-3 gap-2 py-4">
+                        <div className="grid grid-cols-3 gap-2 py-4 flex-none">
                             <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg text-center">
                                 <span className="block text-xl font-bold text-green-600 dark:text-green-400">{sent}</span>
                                 <span className="text-xs text-green-700 dark:text-green-300">تم الإرسال</span>
@@ -96,7 +96,7 @@ export function SendStatusSidebar() {
                             </div>
                         </div>
 
-                        <Separator className="my-2" />
+                        <Separator className="my-2 flex-none" />
 
                         {/* Client List */}
                         <ScrollArea className="flex-1 -mx-6 px-6">

@@ -16,17 +16,83 @@ import path from "path";
 import { tmpdir } from "os";
 import { parse, isValid, isWithinInterval, format } from "date-fns";
 
+interface TokenResponse {
+  access_token?: string;
+  token?: string;
+  id_token?: string;
+  [key: string]: any;
+}
+
+async function getWhatsAppToken(): Promise<string | null> {
+  const clientId = process.env.CLIENT_ID;
+  const clientSecret = process.env.CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    console.error("Missing CLIENT_ID or CLIENT_SECRET in environment variables");
+    return null;
+  }
+
+  try {
+    console.log("Fetching WhatsApp token...");
+    // Using the URL from the user's specific requirement
+    const response = await fetch("http://167.172.24.203:5001/get-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        clientId,
+        clientSecret,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`Token fetch failed: ${response.status} ${response.statusText}`);
+      const text = await response.text();
+      console.error("Response body:", text);
+      return null;
+    }
+
+    const data = await response.json() as TokenResponse;
+    console.log("Token response received (keys):", Object.keys(data));
+
+    // Check common token fields
+    const token = data.access_token || data.token || data.id_token;
+
+    if (!token) {
+      console.error("No token found in response:", data);
+      return null;
+    }
+
+    console.log("Token obtained successfully");
+    return token;
+  } catch (error) {
+    console.error("Error fetching token:", error);
+    return null;
+  }
+}
+
 // Final output path (local folder)
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 const TEMP_DIR = path.join(UPLOADS_DIR, "temp");
 const FINAL_DIR = path.join(UPLOADS_DIR, "final");
 const FINAL_FILE_PATH = path.join(FINAL_DIR, "customers.xls");
 const CURRENT_METADATA_PATH = path.join(UPLOADS_DIR, "current_metadata.json");
+const LAST_SEND_REPORT_PATH = path.join(UPLOADS_DIR, "last_send_report.json");
 
 import { randomUUID } from "crypto";
 
 // Simple in-memory session store
 const SESSIONS = new Set<string>();
+
+interface ReportItem {
+  id: string;
+  name: string;
+  phone: string;
+  status: 'sent' | 'failed' | 'pending';
+  timestamp: string;
+}
+
 
 // Middleware to check if user is authenticated via Token
 const requireAuth = (req: any, res: any, next: any) => {
@@ -592,6 +658,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send to WhatsApp API
       const phoneIdx = headers.indexOf("هاتف العميل");
+      // Try to find name column
+      const nameIdx = headers.findIndex(h => ["اسم العميل", "الاسم", "Name", "Customer Name"].includes(h)) || 0; // Default to first column if not found
+
       if (phoneIdx !== -1 && messageContent) {
         console.log("Starting WhatsApp broadcast...");
         let successCount = 0;
@@ -599,20 +668,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let lastErrorStatus = 0;
         let hasNetworkError = false;
 
+        const report: ReportItem[] = [];
+
+        // Dynamic token fetching (Optimized: Fetch once per batch)
+        let token = process.env.WHATSAPP_API_TOKEN;
+
+        // Always try to fetch dynamic token first if credentials exist, 
+        // or fallback to static if configured.
+        const dynamicToken = await getWhatsAppToken();
+        if (dynamicToken) {
+          token = dynamicToken;
+        } else if (!token) {
+          token = "YOUR_TOKEN_HERE"; // Fallback to placeholder if everything fails
+          console.warn("Using placeholder token. API calls will likely fail.");
+        }
+
+        if (token === "YOUR_TOKEN_HERE") {
+          console.warn("Warning: Using placeholder token. API calls will likely fail.");
+        }
+
         // We use a loop to send messages sequentially to avoid overwhelming the local API
         for (const row of filteredRows) {
           const phone = String(row[phoneIdx] || "").trim();
+          const name = String(row[nameIdx] || "Unknown").trim();
+          const id = randomUUID(); // Generate a temp ID for the report
 
           // Basic validation: ensure phone is not empty
           if (phone) {
             try {
               console.log(`Sending message to ${phone}...`);
-
-              const token = process.env.WHATSAPP_API_TOKEN || "YOUR_TOKEN_HERE";
-
-              if (token === "YOUR_TOKEN_HERE") {
-                console.warn("Warning: Using placeholder token. API calls will likely fail.");
-              }
 
               const response = await fetch("http://167.172.24.203:5001/wp/send?cid=default_client_id1", {
                 method: "POST",
@@ -628,19 +712,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               if (response.ok) {
                 successCount++;
+                report.push({ id, name, phone, status: 'sent', timestamp: new Date().toISOString() });
               } else {
                 console.error(`Failed to send to ${phone}: ${response.status} ${response.statusText}`);
                 failCount++;
                 lastErrorStatus = response.status;
+                report.push({ id, name, phone, status: 'failed', timestamp: new Date().toISOString() });
               }
             } catch (error) {
               console.error(`Error sending to ${phone}:`, error);
               failCount++;
               hasNetworkError = true;
+              report.push({ id, name, phone, status: 'failed', timestamp: new Date().toISOString() });
             }
           }
         }
         console.log(`Broadcast complete. Success: ${successCount}, Failed: ${failCount}`);
+
+        // Save report
+        await writeFile(LAST_SEND_REPORT_PATH, JSON.stringify(report, null, 2));
 
         if (failCount > 0) {
           if (hasNetworkError && lastErrorStatus === 0) {
@@ -672,6 +762,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get Last Send Report
+  app.get("/api/last-send-report", requireAuth, async (req, res) => {
+    try {
+      if (existsSync(LAST_SEND_REPORT_PATH)) {
+        const report = JSON.parse(await readFile(LAST_SEND_REPORT_PATH, "utf-8"));
+        res.json(report);
+      } else {
+        res.json([]); // Empty report if no file exists
+      }
+    } catch (error) {
+      console.error("Error reading last send report:", error);
+      res.status(500).json({ error: "Failed to read report" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
+

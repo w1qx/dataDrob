@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { FileSpreadsheet, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SendStatusSidebar } from "@/components/send-status-sidebar";
 
 export default function Home() {
   const [fileData, setFileData] = useState<FileData | null>(null);
@@ -150,6 +151,9 @@ export default function Home() {
       <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 font-['Cairo'] relative overflow-hidden">
         <div className="relative z-10 w-full max-w-6xl glass-card rounded-3xl p-6 md:p-10 animate-in fade-in zoom-in duration-500">
           <div className="flex flex-col gap-8">
+            <div className="absolute left-4 top-4 md:left-8 md:top-8 z-20">
+              <SendStatusSidebar />
+            </div>
 
             {/* Header */}
             <div className="flex flex-col items-center justify-center text-center space-y-4 pb-6 border-b border-gray-100/50">
